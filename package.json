@@ -1,0 +1,14 @@
+{
+  "name": "api-heure",
+  "version": "1.0.0",
+  "description": "Une API simple qui renvoie l'heure actuelle",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "author": "Golto",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.17.1"
+  }
+}
