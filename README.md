@@ -8,7 +8,7 @@ This project is an API for "Golpex". It aims to facilitate the production of aut
 Golto
 
 ## Version
-1.0.0
+1.0.1
 
 ## Usage
 To start the project, run:
@@ -23,6 +23,10 @@ Return the time as `String`.
 Replace `CONTEXT` and `PROMPT` with some contextual infos and a request :
 http://localhost:3000/initiate?context=CONTEXT&prompt=PROMPT
 Return a response answering your request as `String`.
+
+./improve [context] [prompt] [response]
+./build [context] [prompt]
+./music [prompt]
 
 ## Contributing
 Contributions are welcome. Please open an issue or submit a pull request with your suggestions.

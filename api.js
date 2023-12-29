@@ -105,7 +105,18 @@ const UPDATE_DOC = `<!DOCTYPE html>
 </head>
 <body>
 	<div class="container">
+
 		<h1>Dernière mise à jour de Golpex API</h1>
+
+		<h2>Version :</h2>
+		<p>1.0.1</p>
+		<h2>Changements :</h2>
+		<ul>
+			<li>Ajout de la méthode GET ./improve qui prend en argument CONTEXT, PROMPT et RESPONSE et qui retourne une réponse améliorée.</li>
+			<li>Ajout de la méthode GET ./build qui prend en argument CONTEXT et PROMPT et qui retourne une réponse un prompt pour effectuer la tâche du prompt.</li>
+			<li>Ajout de la méthode GET ./music qui prend en argument PROMPT et qui renvoie un flux audio (musique).</li>
+		</ul>
+
 		<h2>Version :</h2>
 		<p>1.0.0</p>
 		<h2>Changements :</h2>
@@ -114,6 +125,7 @@ const UPDATE_DOC = `<!DOCTYPE html>
 			<li>Ajout de la méthode GET ./time qui retourne le temps actuel.</li>
 			<li>Ajout de la méthode GET ./initiate qui prend en argument CONTEXT et PROMPT et qui retourne une réponse RESPONSE.</li>
 		</ul>
+
 	</div>
 </body>
 </html>
@@ -139,6 +151,29 @@ app.get('/update', (req, res) => {
 app.get('/time', (req, res) => {
 	const currentTime = new Date().toTimeString();
 	res.send(currentTime);
+});
+
+// ----------------------------------------------------------
+//						MUSIC
+
+app.get('/music', async (req, res) => {
+	const prompt = req.query.prompt;
+
+	// Vérifie si les paramètres context et prompt sont fournis
+	if (!prompt) {
+		return res.status(400).send("Le paramètre 'prompt' est requis.");
+	}
+
+	try {
+        //const audioBuffer = await queryAudio({"inputs": prompt});
+        //const audioBuffer = await queryAudio({"inputs": prompt}, MODELS, keyAPI)
+        const audioBuffer = await promptT2M(prompt);
+	    res.setHeader('Content-Type', 'audio/mpeg');
+	    res.send(audioBuffer);
+    } catch (error) {
+        res.status(500).send(`Erreur serveur : ${error.message}`);
+    }
+    
 });
 
 // ----------------------------------------------------------
@@ -241,24 +276,35 @@ const MODELS = {
 		"name": "HuggingFaceH4/zephyr-7b-alpha",
 		"max": 24576
 	},
+	// AUDIO GENERATION
+	
+	"MUSIC_GEN_SMALL": {
+		"name" : "facebook/musicgen-small",
+	},
+	"MUSIC_GEN_MEDIUM": {
+		"name" : "facebook/musicgen-medium",
+	},
 };
 
 
 const API_KEYS = {
 	"TXT2TXT": "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",
-	"TXT2IMG": "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"
+	"TXT2IMG": "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",
+	"TXT2AUDIO": "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",
 };
 
 let API_COUNTER = {
-	"LLM": 0,
-	"TS": 0,
-	"T2I": 0,
-	"ASR": 0
+	"LLM": 0,	//Large Language Model
+	"TS": 0,	//Text to Speech
+	"T2I": 0,	//Text to Image
+	"ASR": 0, 	//Automatic Speech Recognition
+	"T2M": 0, 	//Text to Music
 };
 
 let CURRENT_MODELS = {
 	"LLM": MODELS["MISTRAL_7B"],
 	"TS" : MODELS["SIMILARITY"],
+	"T2M" : MODELS["MUSIC_GEN_SMALL"]
 };
 
 let CURRENT_GENERATION = {
@@ -277,7 +323,27 @@ async function query(payload, model, keyAPI) {
 	return response.data;
 }
 
+async function queryAudio(payload, model, keyAPI) {
 
+	const API_URL = `https://api-inference.huggingface.co/models/${model}`;
+
+	const response = await fetch(
+		API_URL,
+		{
+			headers: { Authorization: `Bearer ${keyAPI}` },
+			method: "POST",
+			body: JSON.stringify(payload),
+		}
+	);
+
+	if (!response.ok) {
+        throw new Error(`Erreur API: ${response.status} ${response.statusText}`);
+    }
+
+	const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    return buffer;
+}
 
 /* =============================================================
 						PROMPT MANIPULATION FUNCTIONS
@@ -302,6 +368,18 @@ async function promptLLM(request, maxTokens = 20, repetitionPenalty = 1.1, tempe
 	}
 
 	return response[0]['generated_text'];
+}
+
+
+async function promptT2M(request) {
+	
+	const audioBuffer = await queryAudio({
+		"inputs": request
+	}, CURRENT_MODELS['T2M']['name'], API_KEYS['TXT2AUDIO']);
+
+	API_COUNTER['T2M']++;
+
+	return audioBuffer;
 }
 
 async function promptLoopLLM(request, options = {}, stopList = ['END OF RESPONSE']) {
@@ -519,14 +597,14 @@ class Prompt {
 	}
 
 	getNodeContent(selector) {
-        const node = this.document.querySelector(selector);
-        if (node) {
-            return node.textContent;
-        } else {
-            console.warn(`No node found for selector: ${selector}`);
-            return null;
-        }
-    }
+		const node = this.document.querySelector(selector);
+		if (node) {
+			return node.textContent;
+		} else {
+			console.warn(`No node found for selector: ${selector}`);
+			return null;
+		}
+	}
 
 	removeNode(selector) {
 		const node = this.document.querySelector(selector);
@@ -554,40 +632,40 @@ class Prompt {
 	}
 
 	async genMarker(variableName, options, stopList) {
-        const markers = this.document.querySelectorAll(`marker[variablename="${variableName}"]`);
-        for (const marker of markers) {
-            // Génère une réponse pour la partie avant le marker
-            const promptContent = this.getMarkerPrecedingContent(marker);
-            let generatedText = await promptLoopLLM(promptContent, options, stopList); // Cette fonction doit être définie pour interagir avec LLM
-            generatedText = getResponseAfterText(generatedText, promptContent);
-            generatedText = stopGen(generatedText, stopList);
+		const markers = this.document.querySelectorAll(`marker[variablename="${variableName}"]`);
+		for (const marker of markers) {
+			// Génère une réponse pour la partie avant le marker
+			const promptContent = this.getMarkerPrecedingContent(marker);
+			let generatedText = await promptLoopLLM(promptContent, options, stopList); // Cette fonction doit être définie pour interagir avec LLM
+			generatedText = getResponseAfterText(generatedText, promptContent);
+			generatedText = stopGen(generatedText, stopList);
 
-            // Remplace le marker par le texte généré
-            const newNode = this.document.createTextNode(generatedText);
-            marker.parentNode.replaceChild(newNode, marker);
-        }
+			// Remplace le marker par le texte généré
+			const newNode = this.document.createTextNode(generatedText);
+			marker.parentNode.replaceChild(newNode, marker);
+		}
 
-        console.log(`\n${this.getHTML()}\n$DONE : ${variableName}\n\n\n`)
+		console.log(`\n${this.getHTML()}\n$DONE : ${variableName}\n\n\n`)
 
-        return this
-    }
+		return this
+	}
 
-    getMarkerPrecedingContent(marker) {
-    	// Implémente la logique pour obtenir le contenu précédant le marker
+	getMarkerPrecedingContent(marker) {
+		// Implémente la logique pour obtenir le contenu précédant le marker
 
-        // Obtenir le HTML complet
-        const htmlContent = this.getHTML();
-        
-        // Construire le sélecteur unique pour ce marker
-        const variableName = marker.getAttribute('variableName');
-        const markerSelector = `<marker variablename="${variableName}">`;
+		// Obtenir le HTML complet
+		const htmlContent = this.getHTML();
+		
+		// Construire le sélecteur unique pour ce marker
+		const variableName = marker.getAttribute('variableName');
+		const markerSelector = `<marker variablename="${variableName}">`;
 
-        // Splitter le HTML autour du marker
-        const parts = htmlContent.split(markerSelector);
+		// Splitter le HTML autour du marker
+		const parts = htmlContent.split(markerSelector);
 
-        // Retourner le contenu avant le marker
-        return parts[0];
-    }
+		// Retourner le contenu avant le marker
+		return parts[0];
+	}
 
 	getHTML() {
 		return this.document.documentElement.outerHTML;
@@ -704,64 +782,64 @@ builderTemplate = `<golpex>
 		<format>
 			task(string)
 			new_agent({
-		        role: string,
-		        goal: string,
-		        markers: [
-		            {
-		                variableName: string,
-		                position: string (e.g., "before request", "after response")
-		            },
-		            ... (more markers as needed)
-		        ],
-		        examples: [
-		            {
-		                request: string,
-		                response: string
-		            },
-		            ... (more examples as needed)
-		        ],
-		        request: string,
-		        response: string
-		    })
+				role: string,
+				goal: string,
+				markers: [
+					{
+						variableName: string,
+						position: string (e.g., "before request", "after response")
+					},
+					... (more markers as needed)
+				],
+				examples: [
+					{
+						request: string,
+						response: string
+					},
+					... (more examples as needed)
+				],
+				request: string,
+				response: string
+			})
 		</format>
 		<example>
 			<task>Create a prompt that build websites</task>
-            <new_agent>
-            	<reasonning>What sould be the role/name of this agent ?</reasonning>
-            	<reasonning>Since this is an agent specialized in building websites, the role should be Web Developper.</reasonning>
-                <role>Web Developper</role>
-                <reasonning>What sould the agent try to achieve ? What is its goal ?</reasonning>
-                <reasonning>As a Web Developper, the agent should build websites. It needs to build an HTML file, a CSS file and a Javascript file.</reasonning>
-                <goal>Given a request create a website with a HTML, a CSS and Javascript file.</goal>
-                <reasonning>Multiple variables are needed such as a request from the user to specify the website wanted and html, css, javascript that are "program type".</reasonning>
-                <format>
-                	request(string)
-                	html({
-                		program: {
-                			language: string,
-                			code: string,
-                		}
-                	})
-                	css({
-                		program: {
-                			language: string,
-                			code: string,
-                		}
-                	})
-                	javascript({
-                		program: {
-                			language: string,
-                			code: string,
-                		}
-                	})
-                </format>
-                <request>createMarker("request")</request>
-                <html>createMarker("html")</html>
-                <css>createMarker("css")</css>
-                <javascript>createMarker("javascript")</javascript>
+			<new_agent>
+				<reasonning>What sould be the role/name of this agent ?</reasonning>
+				<reasonning>Since this is an agent specialized in building websites, the role should be Web Developper.</reasonning>
+				<role>Web Developper</role>
+				<reasonning>What sould the agent try to achieve ? What is its goal ?</reasonning>
+				<reasonning>As a Web Developper, the agent should build websites. It needs to build an HTML file, a CSS file and a Javascript file.</reasonning>
+				<goal>Given a request create a website with a HTML, a CSS and Javascript file.</goal>
+				<reasonning>Multiple variables are needed such as a request from the user to specify the website wanted and html, css, javascript that are "program type".</reasonning>
+				<format>
+					request(string)
+					html({
+						program: {
+							language: string,
+							code: string,
+						}
+					})
+					css({
+						program: {
+							language: string,
+							code: string,
+						}
+					})
+					javascript({
+						program: {
+							language: string,
+							code: string,
+						}
+					})
+				</format>
+				<request>createMarker("request")</request>
+				<html>createMarker("html")</html>
+				<css>createMarker("css")</css>
+				<javascript>createMarker("javascript")</javascript>
 
-                <!-- Additional specific tags for this agent -->
-            </new_agent>
+				<!-- Additional specific tags for this agent -->
+			</new_agent>
 		</example>
 	</agent>
 	
@@ -875,6 +953,9 @@ const TOOLS = {
 		format = prompt.getNodeContent('golpex > new_agent > format');
 		example = prompt.getNodeContent('golpex > new_agent > example');
 
+		// peut largement être amélioré
+		// - vitesse d'éxécution
+		// - généralisation (prompt plus spécifique à la tâche)
 
 		newPromptTemplate = `<Golpex>
 	<Title>AI Autonomous Agent</title>
