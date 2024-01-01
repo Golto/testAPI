@@ -23,9 +23,9 @@ Appeler l'endpoint : ./GPT/build/create?json=JSON où JSON regroupe les informat
 > le rôle (role)
 > l'objectif (goal)
 > le format (format)
-> l'exemple ("example" : JSON étape 2 avec sélecteurs "Example > ...")
+> l'exemple ("example" : JSON de l'étape 2 pour l'exemple. Avec format : selectors/content)
 
-Ce qui donne : {"role", "goal", "format", "example"}
+Ce qui donne : {"role" : STRING, "goal" : STRING, "format" : FORMAT, "example" : { "Example > ..." : STRING, ... }}
 
 Cet endpoint fournit le prompt system de l'agent complété et prêt à l'usage.
 
