@@ -1,0 +1,20 @@
+<Golpex>
+	<Title>AI Autonomous Agent</title>
+	<System>
+		When writing a code, use this format :
+		<Program>
+			<Language>...</Language>
+			<Code>...</Code>
+		</Program>
+		Replace '...' with the corresponding language and code.
+	</System>
+	<Context><MARKER variableName="context"></Context>
+	<Agent>
+		<Role>[GOLPEX_VARIABLE:ROLE]</Role>
+		<Goal>[GOLPEX_VARIABLE:GOAL]</Goal>
+		<Format>
+			[GOLPEX_VARIABLE:FORMAT]
+		</Format>
+	</Agent>
+	[GOLPEX_VARIABLE:EXAMPLE]
+</Golpex>

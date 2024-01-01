@@ -21,13 +21,13 @@ const port = 3000;
 
 
 async function readFileContent(path) {
-    try {
-        const content = await fs.readFile(path, 'utf8');
-        return content;
-    } catch (error) {
-        console.error(`Erreur lors de la lecture du fichier : ${error.message}`);
-        throw error; // Ou gérer l'erreur comme tu le souhaites
-    }
+	try {
+		const content = await fs.readFile(path, 'utf8');
+		return content;
+	} catch (error) {
+		console.error(`Erreur lors de la lecture du fichier : ${error.message}`);
+		throw error; // Ou gérer l'erreur comme tu le souhaites
+	}
 }
 
 // ----------------------------------------------------------
@@ -170,7 +170,7 @@ app.get('/GPT/build/get', async (req, res) => {
 	const task = req.query.task;
 
 	try {
-        if (!task) {
+		if (!task) {
 			return res.status(400).send("Le paramètre 'task' est requis.");
 		}
 
@@ -178,80 +178,129 @@ app.get('/GPT/build/get', async (req, res) => {
 		response = response.replace("[GOLPEX_VARIABLE:TASK]", task);
 
 		res.send(response);
-        
-    } catch (error) {
-        res.status(500).send(`Erreur serveur: ${error.message}`);
-    }
+		
+	} catch (error) {
+		res.status(500).send(`Erreur serveur: ${error.message}`);
+	}
 });
 
 app.get('/GPT/build/set', async (req, res) => {
 
 	const json = req.query.json;
+
+	if (!json) {
+		return res.status(400).send("Le paramètre 'json' est requis.");
+	}
+
+	
 	try {
-        const data = JSON.parse(json);
-        const { role, goal, format } = data;
+		const data = JSON.parse(json);
+		const { role, goal, format } = data;
 
-        if (!role || !goal || !format) {
-            return res.status(400).send("Les paramètres 'role', 'goal' et 'format' sont requis.");
-        }
+		if (!role || !goal || !format) {
+			return res.status(400).send("Les paramètres 'role', 'goal' et 'format' du fichier JSON sont requis.");
+		}
 
-        let response = await readFileContent("./prompts/GPT/build/set.txt");
-        response = response.replace("[GOLPEX_VARIABLE:ROLE]", role);
-        response = response.replace("[GOLPEX_VARIABLE:GOAL]", goal);
-        response = response.replace("[GOLPEX_VARIABLE:FORMAT]", JSON.stringify(format));
-        response = response.replace("[GOLPEX_VARIABLE:EXAMPLE]", jsonToHtml(format));
+		let response = await readFileContent("./prompts/GPT/build/set.txt");
+		response = response.replace("[GOLPEX_VARIABLE:ROLE]", role);
+		response = response.replace("[GOLPEX_VARIABLE:GOAL]", goal);
+		response = response.replace("[GOLPEX_VARIABLE:FORMAT]", JSON.stringify(format));
+		response = response.replace("[GOLPEX_VARIABLE:EXAMPLE]", jsonToHtml(format));
 
-        res.send(response);
+		res.send(response);
 
-    } catch (error) {
-        res.status(500).send(`Erreur serveur: ${error.message}`);
-    }
+	} catch (error) {
+		res.status(500).send(`Erreur serveur: ${error.message}`);
+	}
 });
 
 function jsonToHtml(json, rootElement = 'Example') {
-    let html = `<${rootElement}>`;
+	let html = `<${rootElement}>`;
 
-    for (const key in json) {
-        if (json.hasOwnProperty(key)) {
-            const value = json[key];
+	for (const key in json) {
+		if (json.hasOwnProperty(key)) {
+			const value = json[key];
 
-            if (typeof value === 'object') {
-                // Appel récursif pour les objets imbriqués
-                html += `<${key}>${jsonToHtml(value, '')}</${key}>`;
-            } else {
-                // Gérer les valeurs simples
-                html += `<${key}>[GOLPEX_VARIABLE:${key}]</${key}>`;
-            }
-        }
-    }
+			if (typeof value === 'object') {
+				// Appel récursif pour les objets imbriqués
+				html += `<${key}>${jsonToHtml(value, '')}</${key}>`;
+			} else {
+				// Gérer les valeurs simples
+				html += `<${key}>[GOLPEX_VARIABLE:${key}]</${key}>`;
+			}
+		}
+	}
 
-    html += `</${rootElement}>`;
-    return html;
+	html += `</${rootElement}>`;
+	return html.replace('<>','');
 }
 
 app.get('/GPT/build/create', async (req, res) => {
 
 	const json = req.query.json;
 	try {
-        const data = JSON.parse(json);
-        const { role, goal, format, example } = data;
+		const data = JSON.parse(json);
+		const { role, goal, format, example } = data;
 
-        if (!role || !goal || !format) {
-            return res.status(400).send("Les paramètres 'role', 'goal', 'format' et 'example' sont requis.");
-        }
+		if (!role || !goal || !format) {
+			return res.status(400).send("Les paramètres 'role', 'goal', 'format' et 'example' sont requis.");
+		}
 
-        let response = await readFileContent("./prompts/GPT/build/set.txt");
-        response = response.replace("[GOLPEX_VARIABLE:ROLE]", role);
-        response = response.replace("[GOLPEX_VARIABLE:GOAL]", goal);
-        response = response.replace("[GOLPEX_VARIABLE:FORMAT]", JSON.stringify(format));
-        response = response.replace("[GOLPEX_VARIABLE:EXAMPLE]", jsonToHtml(format));
+		let response = await readFileContent("./prompts/GPT/build/create.txt");
+		response = response.replace("[GOLPEX_VARIABLE:ROLE]", role);
+		response = response.replace("[GOLPEX_VARIABLE:GOAL]", goal);
+		response = response.replace("[GOLPEX_VARIABLE:FORMAT]", JSON.stringify(format));
+		response = response.replace("[GOLPEX_VARIABLE:EXAMPLE]", jsonToHtml(format));
 
-        res.send(response);
+		response = completeExampleNode(example, response);
 
-    } catch (error) {
-        res.status(500).send(`Erreur serveur: ${error.message}`);
-    }
+		response = addResultNode(response, format);
+
+		response = completeResultNode(example, response)
+
+		res.send(response);
+
+	} catch (error) {
+		res.status(500).send(`Erreur serveur: ${error.message}`);
+	}
 });
+
+function completeExampleNode(jsonSelectors, htmlPrompt) {
+
+
+	let completedHtml = new Prompt(htmlPrompt);
+
+	for(let key in jsonSelectors){
+		value = jsonSelectors[key];
+		completedHtml.setNodeContent(key.toLowerCase(), value);
+	}
+
+	return completedHtml.getHTML();
+}
+
+function addResultNode(htmlPrompt, format){
+
+	let completedHtml = new Prompt(htmlPrompt);
+
+	completedHtml.addNode("results", "golpex");
+	completedHtml.addNodeContent("results", "[GOLPEX_VARIABLE:RESULTS]");
+
+	return completedHtml.getHTML().replace("[GOLPEX_VARIABLE:RESULTS]", jsonToHtml(format, "result"));
+}
+
+function completeResultNode(jsonSelectors, htmlPrompt) {
+
+
+	let completedHtml = new Prompt(htmlPrompt);
+
+	for(let key in jsonSelectors){
+		key = key.replace('Example >', 'result >')
+		completedHtml.setNodeContent(key, "");
+		completedHtml.addMarker(key.replace('result > ',''), key);
+	}
+
+	return completedHtml.getHTML();
+}
 
 /* =============================================================
 						LISTEN

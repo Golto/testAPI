@@ -64,6 +64,11 @@ Création de prompts system pour de futurs agents autonomes avec un rôle défin
 Retourne sous format JSON le rôle, le but et le format du prompt pour l'agent autonome étant donné une tâche.
 Format attendu : { "role" : STRING, "goal" : STRING,  "format" : FORMAT}
 
+# Exemples de rôles :
+- Web developper
+- Python Programmer
+- Mathematician
+- Data analyst
 # Exemples de formats :
 
 - Pour le "goal" : "Write a response given a certain request with details while being organized."
