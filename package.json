@@ -1,11 +1,17 @@
 {
-  "name": "Golpex",
-  "version": "1.0.1",
-  "description": "API de Golpex : aide à la construction des agents autonomes",
-  "main": "api.js",
-  "scripts": {
-    "start": "node api.js"
-  },
-  "author": "Golto",
-  "license": "MIT"
+    "name": "Golpex",
+    "version": "1.0.1",
+    "description": "API de Golpex : aide à la construction des agents autonomes",
+    "main": "api.js",
+    "scripts": {
+      "start": "node api.js"
+    },
+    "author": "Golto",
+    "license": "MIT",
+    "dependencies": {
+      "express": "^4.17.1",
+      "axios": "^0.21.1",
+      "jsdom": "^16.4.0"
+      // Remplacer par des versions stables plus récentes
+    }
 }
