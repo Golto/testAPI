@@ -23,7 +23,7 @@ Appeler l'endpoint : ./GPT/build/create?json=JSON où JSON regroupe les informat
 > le rôle (role)
 > l'objectif (goal)
 > le format (format)
-> l'exemple ("example" : JSON étape 2)
+> l'exemple ("example" : JSON étape 2 avec sélecteurs "Example > ...")
 
 Ce qui donne : {"role", "goal", "format", "example"}
 
