@@ -1,0 +1,62 @@
+# Contexte :
+
+Pour avoir de meilleurs résultats, l'agent a besoin d'avoir un exemple de référence. On veut donc remplacer toutes les variables manquantes de l'exemple (désignées par [GOLPEX_VARIABLE:...]) par des exemples complexes et utiles.
+
+# Prompt :
+
+<Golpex>
+	<Title>AI Autonomous Agent</title>
+	<System>
+		When writing a code, use this format :
+		<Program>
+			<Language>...</Language>
+			<Code>...</Code>
+		</Program>
+		Replace '...' with the corresponding language and code.
+	</System>
+	<Context><MARKER variableName="context"></Context>
+	<Agent>
+		<Role>[GOLPEX_VARIABLE:ROLE]</Role>
+		<Goal>[GOLPEX_VARIABLE:GOAL]</Goal>
+		<Format>
+			[GOLPEX_VARIABLE:FORMAT]
+		</Format>
+	</Agent>
+	[GOLPEX_VARIABLE:EXAMPLE]
+</Golpex>
+
+# Objectif :
+
+Retourne sous format JSON les différentes variables de l'exemple :
+Format attendu : { "var1" : STRING, "var2" : STRING,  "var3" : FORMAT, etc...}
+Le nom des variables doit être un sélécteur DOM.
+
+# Exemple pour le nom des variables:
+
+- html :
+
+<Example>
+	<request>[GOLPEX_VARIABLE:request]</request>
+	<html>
+		<program>
+			<language>[GOLPEX_VARIABLE:language]</language>
+			<code>[GOLPEX_VARIABLE:code]</code>
+		</program>
+	</html>
+	<css>
+		<program>
+			<language>[GOLPEX_VARIABLE:language]</language>
+			<code>[GOLPEX_VARIABLE:code]</code>
+		</program>
+	</css>
+	<javascript>
+		<program>
+			<language>[GOLPEX_VARIABLE:language]</language>
+			<code>[GOLPEX_VARIABLE:code]</code>
+		</program>
+	</javascript>
+</Example>
+
+- json :
+
+{ "Example > request" : STRING, "Example > html > program > language" : STRING,  "Example > html > program > code" : FORMAT, etc...}

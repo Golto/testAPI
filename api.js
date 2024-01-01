@@ -10,6 +10,8 @@
 
 const express = require('express');
 const axios = require('axios');
+const { JSDOM } = require('jsdom');
+const fs = require('fs').promises;
 const app = express();
 const port = 3000;
 
@@ -17,137 +19,43 @@ const port = 3000;
 						API METHODS
 ============================================================= */
 
-const PRIVACY_DOC = `<!DOCTYPE html>
-<html lang="fr">
-<head>
-	<meta charset="UTF-8">
-	<title>Politique de Confidentialité de Golpex API</title>
-	<style>
-		body {
-			font-family: Arial, sans-serif;
-			line-height: 1.6;
-			margin: 0;
-			padding: 0;
-			background: #f4f4f4;
-			color: #333;
-		}
-		.container {
-			width: 80%;
-			margin: auto;
-			overflow: hidden;
-			padding: 20px;
-		}
-		h1, h2 {
-			color: #333;
-		}
-		p, ul {
-			margin-bottom: 10px;
-		}
-	</style>
-</head>
-<body>
-	<div class="container">
-		<h1>Politique de confidentialité de Golpex API</h1>
-		<h2>Introduction :</h2>
-		<p>Golpex-API est un projet initié par Golto dont un des objectifs est de fournir des outils à la création d'agents autonomes.</p>
-		<h2>Informations Collectées :</h2>
-		<p>Golpex-API ne collectes pas les données émises par l'utilisateur à l'appel de l'API.</p>
-		<h2>Utilisation des Données :</h2>
-		<p>Aucune donnée utilisateur n'est stockée à l'appel de l'API.</p>
-		<h2>Partage des Données :</h2>
-		<p>Bien que les données ne soients pas stockées, Golpex-API utilise des modèles hébergés sur HuggingFace de certains tiers. Par conséquent, ce qui est fournit à l'API est susceptible d'être traité par un de ces modèles. Il est recommandé de consulter la politique de confidentialité concernant les modèles utilisés.</p>
-		<h2>Sécurité des Données :</h2>
-		<p>Aucune donnée utilisateur n'est stockée à l'appel de l'API.</p>
-		<h2>Droits des Utilisateurs :</h2>
-		<p>Aucune donnée utilisateur n'est stockée à l'appel de l'API.</p>
-		<h2>Utilisation des Cookies :</h2>
-		<p>Golpex-API n'utilise pas de cookies.</p>
-		<h2>Modifications de la Politique de Confidentialité :</h2>
-		<p>L'utilisateur devra se rendre sur la page ./update pour se tenir informer des dernières modifications du service de sa politique de confidentialité.
-		Il est recommandé de consulter régulièrement ./privacy</p>
-		<h2>Contact :</h2>
-		<p>Discord : <a href="https://discord.gg/ZqrFMk29ah">Serveur de Golpex</a></p>
-		<h2>Date d'Entrée en Vigueur :</h2>
-		<p>26 Décembre 2023</p>
-	</div>
-</body>
-</html>
 
-`
+async function readFileContent(path) {
+    try {
+        const content = await fs.readFile(path, 'utf8');
+        return content;
+    } catch (error) {
+        console.error(`Erreur lors de la lecture du fichier : ${error.message}`);
+        throw error; // Ou gérer l'erreur comme tu le souhaites
+    }
+}
 
-const UPDATE_DOC = `<!DOCTYPE html>
-<html lang="fr">
-<head>
-	<meta charset="UTF-8">
-	<title>Dernière mise à jour de Golpex API</title>
-	<style>
-		body {
-			font-family: Arial, sans-serif;
-			line-height: 1.6;
-			margin: 0;
-			padding: 0;
-			background: #f4f4f4;
-			color: #333;
-		}
-		.container {
-			width: 80%;
-			margin: auto;
-			overflow: hidden;
-			padding: 20px;
-		}
-		h1, h2 {
-			color: #333;
-		}
-		p, ul {
-			margin-bottom: 10px;
-		}
-	</style>
-</head>
-<body>
-	<div class="container">
-
-		<h1>Dernière mise à jour de Golpex API</h1>
-
-		<h2>Version :</h2>
-		<p>1.0.1</p>
-		<h2>Changements :</h2>
-		<ul>
-			<li>Ajout de la méthode GET ./improve qui prend en argument CONTEXT, PROMPT et RESPONSE et qui retourne une réponse améliorée.</li>
-			<li>Ajout de la méthode GET ./build qui prend en argument CONTEXT et PROMPT et qui retourne une réponse un prompt pour effectuer la tâche du prompt.</li>
-			<li>Ajout de la méthode GET ./music qui prend en argument PROMPT et qui renvoie un flux audio (musique).</li>
-		</ul>
-
-		<h2>Version :</h2>
-		<p>1.0.0</p>
-		<h2>Changements :</h2>
-		<p>Création de l'API</p>
-		<ul>
-			<li>Ajout de la méthode GET ./time qui retourne le temps actuel.</li>
-			<li>Ajout de la méthode GET ./initiate qui prend en argument CONTEXT et PROMPT et qui retourne une réponse RESPONSE.</li>
-		</ul>
-
-	</div>
-</body>
-</html>
-
-
-`
+// ----------------------------------------------------------
+//						HOME
+// Endpoint pour la politique de confidentialité
+app.get('/', async(req, res) => {
+	PRIVACY_DOC = await readFileContent("./docs/home.html");
+	res.send(PRIVACY_DOC);
+});
 
 // ----------------------------------------------------------
 //						PRIVACY
 // Endpoint pour la politique de confidentialité
-app.get('/privacy', (req, res) => {
-	res.send(PRIVACY_DOC);
+app.get('/privacy', async(req, res) => {
+	response = await readFileContent("./docs/privacy.html");
+	res.send(response);
 });
 // ----------------------------------------------------------
 //						UPDATE
 // Endpoint pour les mises à jour
-app.get('/update', (req, res) => {
-	res.send(UPDATE_DOC);
+app.get('/update', async (req, res) => {
+	response = await readFileContent("./docs/update.html");
+	res.send(response);
 });
 
 // ----------------------------------------------------------
 //						TIME
+// Endpoint pour obtenir le temps actuel
 app.get('/time', (req, res) => {
 	const currentTime = new Date().toTimeString();
 	res.send(currentTime);
@@ -165,20 +73,20 @@ app.get('/music', async (req, res) => {
 	}
 
 	try {
-        //const audioBuffer = await queryAudio({"inputs": prompt});
-        //const audioBuffer = await queryAudio({"inputs": prompt}, MODELS, keyAPI)
-        const audioBuffer = await promptT2M(prompt);
-	    res.setHeader('Content-Type', 'audio/mpeg');
-	    res.send(audioBuffer);
-    } catch (error) {
-        res.status(500).send(`Erreur serveur : ${error.message}`);
-    }
-    
+		const audioBuffer = await promptT2M(prompt);
+		//res.setHeader('Content-Type', 'audio/mpeg');
+		//res.send(audioBuffer);
+		res.send(Array.from(audioBuffer))
+		
+	} catch (error) {
+		res.status(500).send(`Erreur modèle Text to Music : ${error.message}`);
+	}
+	
 });
 
 // ----------------------------------------------------------
-//						INITIATE
-app.get('/initiate', async (req, res) => {
+//						ASK
+app.get('/ask', async (req, res) => {
 	let context = req.query.context;
 	const prompt = req.query.prompt;
 
@@ -198,7 +106,7 @@ app.get('/initiate', async (req, res) => {
 //http://localhost:3000/initiate?context=monContexte&prompt=monPrompt
 
 // ----------------------------------------------------------
-//						INITIATE
+//						IMPROVE
 app.get('/improve', async (req, res) => {
 	let context = req.query.context;
 	const prompt = req.query.prompt;
@@ -218,8 +126,10 @@ app.get('/improve', async (req, res) => {
 });
 
 //http://localhost:3000/improve?context=monContexte&prompt=monPrompt&response=maResponse
+
 // ----------------------------------------------------------
 //						Prompt factory
+/*
 app.get('/build', async (req, res) => {
 
 	let context = req.query.context;
@@ -234,6 +144,113 @@ app.get('/build', async (req, res) => {
 
 	const response = await TOOLS["build"](context, prompt);
 	res.send(response);
+});
+*/
+
+// ----------------------------------------------------------
+//						Prompt factory
+
+/*
+Moi : Tâche
+GPT : {"role" : STRING, "goal" : STRING, "format" : STRING}
+*/
+app.get('/GPT/build/', async (req, res) => {
+	/*
+	golpexGPT appelle cet endpoint pour connaître la procédure de création d'un prompt d'agent.
+	Étape 1:
+		- Demandez la tâche que doit exécuter l'agent si l'utilisateur ne l'a pas déjà fourni
+		- et appeller l'endpoint /GPT/build/get?task=TASK
+	*/
+	response = await readFileContent("./prompts/GPT/build/instructions.txt");
+	res.send(response);
+});
+
+app.get('/GPT/build/get', async (req, res) => {
+
+	const task = req.query.task;
+
+	try {
+        if (!task) {
+			return res.status(400).send("Le paramètre 'task' est requis.");
+		}
+
+		response = await readFileContent("./prompts/GPT/build/get.txt");
+		response = response.replace("[GOLPEX_VARIABLE:TASK]", task);
+
+		res.send(response);
+        
+    } catch (error) {
+        res.status(500).send(`Erreur serveur: ${error.message}`);
+    }
+});
+
+app.get('/GPT/build/set', async (req, res) => {
+
+	const json = req.query.json;
+	try {
+        const data = JSON.parse(json);
+        const { role, goal, format } = data;
+
+        if (!role || !goal || !format) {
+            return res.status(400).send("Les paramètres 'role', 'goal' et 'format' sont requis.");
+        }
+
+        let response = await readFileContent("./prompts/GPT/build/set.txt");
+        response = response.replace("[GOLPEX_VARIABLE:ROLE]", role);
+        response = response.replace("[GOLPEX_VARIABLE:GOAL]", goal);
+        response = response.replace("[GOLPEX_VARIABLE:FORMAT]", JSON.stringify(format));
+        response = response.replace("[GOLPEX_VARIABLE:EXAMPLE]", jsonToHtml(format));
+
+        res.send(response);
+
+    } catch (error) {
+        res.status(500).send(`Erreur serveur: ${error.message}`);
+    }
+});
+
+function jsonToHtml(json, rootElement = 'Example') {
+    let html = `<${rootElement}>`;
+
+    for (const key in json) {
+        if (json.hasOwnProperty(key)) {
+            const value = json[key];
+
+            if (typeof value === 'object') {
+                // Appel récursif pour les objets imbriqués
+                html += `<${key}>${jsonToHtml(value, '')}</${key}>`;
+            } else {
+                // Gérer les valeurs simples
+                html += `<${key}>[GOLPEX_VARIABLE:${key}]</${key}>`;
+            }
+        }
+    }
+
+    html += `</${rootElement}>`;
+    return html;
+}
+
+app.get('/GPT/build/create', async (req, res) => {
+
+	const json = req.query.json;
+	try {
+        const data = JSON.parse(json);
+        const { role, goal, format, example } = data;
+
+        if (!role || !goal || !format) {
+            return res.status(400).send("Les paramètres 'role', 'goal', 'format' et 'example' sont requis.");
+        }
+
+        let response = await readFileContent("./prompts/GPT/build/set.txt");
+        response = response.replace("[GOLPEX_VARIABLE:ROLE]", role);
+        response = response.replace("[GOLPEX_VARIABLE:GOAL]", goal);
+        response = response.replace("[GOLPEX_VARIABLE:FORMAT]", JSON.stringify(format));
+        response = response.replace("[GOLPEX_VARIABLE:EXAMPLE]", jsonToHtml(format));
+
+        res.send(response);
+
+    } catch (error) {
+        res.status(500).send(`Erreur serveur: ${error.message}`);
+    }
 });
 
 /* =============================================================
@@ -286,7 +303,7 @@ const MODELS = {
 	},
 };
 
-
+// clés gratuites et renouvelables
 const API_KEYS = {
 	"TXT2TXT": "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",
 	"TXT2IMG": "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",
@@ -337,12 +354,12 @@ async function queryAudio(payload, model, keyAPI) {
 	);
 
 	if (!response.ok) {
-        throw new Error(`Erreur API: ${response.status} ${response.statusText}`);
-    }
+		throw new Error(`Erreur API: ${response.status} ${response.statusText}`);
+	}
 
 	const arrayBuffer = await response.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-    return buffer;
+	const buffer = Buffer.from(arrayBuffer);
+	return buffer;
 }
 
 /* =============================================================
@@ -381,6 +398,8 @@ async function promptT2M(request) {
 
 	return audioBuffer;
 }
+
+
 
 async function promptLoopLLM(request, options = {}, stopList = ['END OF RESPONSE']) {
 	let maxTokens = 20;
@@ -556,7 +575,7 @@ async function initiate(context, request) {
 ############################################################################
 ######################################################################### */
 
-const { JSDOM } = require('jsdom');
+
 
 class Prompt {
 	constructor(template) {

@@ -1,0 +1,27 @@
+{
+    "basic" : {
+        "request" : "STRING",
+        "response" : "STRING"
+    },
+    "web" : {
+        "request" : "STRING",
+        "html" : {
+            "program" : {
+                "language" : "STRING",
+                "code" : "STRING"
+            }
+        },
+        "css" : {
+            "program" : {
+                "language" : "STRING",
+                "code" : "STRING"
+            }
+        },
+        "javascript" : {
+            "program" : {
+                "language" : "STRING",
+                "code" : "STRING"
+            }
+        }
+    }
+}

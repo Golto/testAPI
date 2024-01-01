@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+	<meta charset="UTF-8">
+	<title>Dernière mise à jour de Golpex API</title>
+	<style>
+		body {
+			font-family: Arial, sans-serif;
+			line-height: 1.6;
+			margin: 0;
+			padding: 0;
+			background: #f4f4f4;
+			color: #333;
+		}
+		.container {
+			width: 80%;
+			margin: auto;
+			overflow: hidden;
+			padding: 20px;
+		}
+		h1, h2 {
+			color: #333;
+		}
+		p, ul {
+			margin-bottom: 10px;
+		}
+	</style>
+</head>
+<body>
+	<div class="container">
+
+		<h1>Dernière mise à jour de Golpex API</h1>
+
+		<h2>Version :</h2>
+		<p>1.0.1</p>
+		<h2>Changements :</h2>
+		<ul>
+			<li>Ajout de la méthode GET ./improve qui prend en argument CONTEXT, PROMPT et RESPONSE et qui retourne une réponse améliorée.</li>
+			<li>Ajout de la méthode GET ./build qui prend en argument CONTEXT et PROMPT et qui retourne une réponse un prompt pour effectuer la tâche du prompt.</li>
+			<li>Ajout de la méthode GET ./music qui prend en argument PROMPT et qui renvoie un flux audio (musique).</li>
+		</ul>
+
+		<h2>Version :</h2>
+		<p>1.0.0</p>
+		<h2>Changements :</h2>
+		<p>Création de l'API</p>
+		<ul>
+			<li>Ajout de la méthode GET ./time qui retourne le temps actuel.</li>
+			<li>Ajout de la méthode GET ./initiate qui prend en argument CONTEXT et PROMPT et qui retourne une réponse RESPONSE.</li>
+		</ul>
+
+	</div>
+</body>
+</html>

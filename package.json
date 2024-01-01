@@ -7,11 +7,5 @@
     "start": "node api.js"
   },
   "author": "Golto",
-  "license": "MIT",
-  "dependencies": {
-    "axios": "^1.6.2",
-    "express": "^4.18.2",
-    "jsdom": "^23.0.1",
-    "node-fetch": "^3.3.2"
-  }
+  "license": "MIT"
 }
