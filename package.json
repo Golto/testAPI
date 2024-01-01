@@ -12,6 +12,6 @@
       "express": "^4.17.1",
       "axios": "^0.21.1",
       "jsdom": "^16.4.0"
-      // Remplacer par des versions stables plus récentes
-    }
+    },
+    "comment" : "// Remplacer par des versions stables plus récentes"
 }
