@@ -242,15 +242,19 @@ app.get('/GPT/build/create', async (req, res) => {
 		const data = JSON.parse(json);
 		const { role, goal, format, example } = data;
 
-		if (!role || !goal || !format) {
+		if (!role || !goal || !format || !example) {
 			return res.status(400).send("Les paramètres 'role', 'goal', 'format' et 'example' sont requis.");
 		}
+
+		
 
 		let response = await readFileContent("./prompts/GPT/build/create.txt");
 		response = response.replace("[GOLPEX_VARIABLE:ROLE]", role);
 		response = response.replace("[GOLPEX_VARIABLE:GOAL]", goal);
 		response = response.replace("[GOLPEX_VARIABLE:FORMAT]", JSON.stringify(format));
 		response = response.replace("[GOLPEX_VARIABLE:EXAMPLE]", jsonToHtml(format));
+
+
 
 		response = completeExampleNode(example, response);
 
@@ -299,7 +303,7 @@ function completeResultNode(jsonSelectors, htmlPrompt) {
 
 	for(let key in jsonSelectors){
 		
-		key = key.replace('Example >', 'result >')
+		key = key.replace('example >', 'result >')
 		completedHtml.setNodeContent(key, "");
 		completedHtml.addMarker(key.replace('result > ',''), key);
 	}

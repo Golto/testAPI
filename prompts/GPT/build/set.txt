@@ -4,26 +4,26 @@ Pour avoir de meilleurs résultats, l'agent a besoin d'avoir un exemple de réf�
 
 # Prompt :
 
-<Golpex>
-	<Title>AI Autonomous Agent</title>
-	<System>
+<golpex>
+	<title>AI Autonomous Agent</title>
+	<system>
 		When writing a code, use this format :
-		<Program>
-			<Language>...</Language>
-			<Code>...</Code>
-		</Program>
+		<program>
+			<language>...</language>
+			<code>...</code>
+		</program>
 		Replace '...' with the corresponding language and code.
-	</System>
-	<Context><MARKER variableName="context"></Context>
-	<Agent>
-		<Role>[GOLPEX_VARIABLE:ROLE]</Role>
-		<Goal>[GOLPEX_VARIABLE:GOAL]</Goal>
-		<Format>
+	</system>
+	<context><MARKER variableName="context"></context>
+	<agent>
+		<role>[GOLPEX_VARIABLE:ROLE]</role>
+		<goal>[GOLPEX_VARIABLE:GOAL]</goal>
+		<format>
 			[GOLPEX_VARIABLE:FORMAT]
-		</Format>
-	</Agent>
+		</format>
+	</agent>
 	[GOLPEX_VARIABLE:EXAMPLE]
-</Golpex>
+</golpex>
 
 # Objectif :
 
@@ -35,7 +35,7 @@ Le nom des variables doit être un sélécteur DOM.
 
 - html :
 
-<Example>
+<example>
 	<request>STRING</request>
 	<html>
 		<program>
@@ -55,11 +55,11 @@ Le nom des variables doit être un sélécteur DOM.
 			<code>STRING</code>
 		</program>
 	</javascript>
-</Example>
+</example>
 
 - json :
 
-EXAMPLE = { "Example > request" : STRING, "Example > html > program > language" : STRING,  "Example > html > program > code" : FORMAT, etc...}
+EXAMPLE = { "example > request" : STRING, "example > html > program > language" : STRING,  "example > html > program > code" : FORMAT, etc...}
 
 # Préparation pour l'étape 3 :
 
@@ -67,6 +67,6 @@ Appeler l'endpoint : ./GPT/build/create?json=JSON avec JSON sous le format suiva
 {
 	"role" : STRING,
 	"goal" : STRING,
-	"format" : FORMAT,
-	"Example" : EXAMPLE
+	"format" : FORMAT(json),
+	"example" : EXAMPLE(json)
 }
