@@ -105,3 +105,12 @@ Format attendu : { "role" : STRING, "goal" : STRING,  "format" : FORMAT}
 
 # Tâche :
 [GOLPEX_VARIABLE:TASK]
+
+# Préparation pour l'étape 2 :
+
+Appeler l'endpoint : ./GPT/build/set?json=JSON avec JSON sous le format suivant :
+{
+	"role" : STRING,
+	"goal" : STRING,
+	"format" : FORMAT(json)
+}

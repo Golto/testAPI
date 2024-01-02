@@ -1,0 +1,12 @@
+
+# Prompt System :
+
+[GOLPEX_VARIABLE:PROMPT]
+
+# Préparation pour l'étape 4 :
+
+Présenter à l'utilisateur le résultat comme ceci :
+# Prompt System pour l'agent [ROLE DE L'AGENT] :
+```html
+[PROMPT SYSTEM]
+```

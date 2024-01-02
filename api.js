@@ -256,7 +256,11 @@ app.get('/GPT/build/create', async (req, res) => {
 
 		response = addResultNode(response, format);
 
-		response = completeResultNode(example, response)
+		response = completeResultNode(example, response);
+		temp = response;
+
+		response = await readFileContent("./prompts/GPT/build/create2.txt");
+		response = response.replace("[GOLPEX_VARIABLE:PROMPT]", temp);
 
 		res.send(response);
 
@@ -294,6 +298,7 @@ function completeResultNode(jsonSelectors, htmlPrompt) {
 	let completedHtml = new Prompt(htmlPrompt);
 
 	for(let key in jsonSelectors){
+		
 		key = key.replace('Example >', 'result >')
 		completedHtml.setNodeContent(key, "");
 		completedHtml.addMarker(key.replace('result > ',''), key);

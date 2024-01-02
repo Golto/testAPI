@@ -59,4 +59,14 @@ Le nom des variables doit être un sélécteur DOM.
 
 - json :
 
-{ "Example > request" : STRING, "Example > html > program > language" : STRING,  "Example > html > program > code" : FORMAT, etc...}
+EXAMPLE = { "Example > request" : STRING, "Example > html > program > language" : STRING,  "Example > html > program > code" : FORMAT, etc...}
+
+# Préparation pour l'étape 3 :
+
+Appeler l'endpoint : ./GPT/build/create?json=JSON avec JSON sous le format suivant :
+{
+	"role" : STRING,
+	"goal" : STRING,
+	"format" : FORMAT,
+	"Example" : EXAMPLE
+}
