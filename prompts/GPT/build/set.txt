@@ -36,23 +36,23 @@ Le nom des variables doit être un sélécteur DOM.
 - html :
 
 <Example>
-	<request>[GOLPEX_VARIABLE:request]</request>
+	<request>STRING</request>
 	<html>
 		<program>
-			<language>[GOLPEX_VARIABLE:language]</language>
-			<code>[GOLPEX_VARIABLE:code]</code>
+			<language>STRING</language>
+			<code>STRING</code>
 		</program>
 	</html>
 	<css>
 		<program>
-			<language>[GOLPEX_VARIABLE:language]</language>
-			<code>[GOLPEX_VARIABLE:code]</code>
+			<language>STRING</language>
+			<code>STRING</code>
 		</program>
 	</css>
 	<javascript>
 		<program>
-			<language>[GOLPEX_VARIABLE:language]</language>
-			<code>[GOLPEX_VARIABLE:code]</code>
+			<language>STRING</language>
+			<code>STRING</code>
 		</program>
 	</javascript>
 </Example>
