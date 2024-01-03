@@ -1,54 +1,69 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-	<meta charset="UTF-8">
-	<title>Dernière mise à jour de Golpex API</title>
-	<style>
-		body {
-			font-family: Arial, sans-serif;
-			line-height: 1.6;
-			margin: 0;
-			padding: 0;
-			background: #f4f4f4;
-			color: #333;
-		}
-		.container {
-			width: 80%;
-			margin: auto;
-			overflow: hidden;
-			padding: 20px;
-		}
-		h1, h2 {
-			color: #333;
-		}
-		p, ul {
-			margin-bottom: 10px;
-		}
-	</style>
+    <meta charset="UTF-8">
+    <title>Dernière mise à jour de Golpex API</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            background: #f4f4f4;
+            color: #333;
+        }
+        .container {
+            width: 80%;
+            margin: auto;
+            overflow: hidden;
+            padding: 20px;
+        }
+        h1, h2 {
+            color: #333;
+        }
+        p, ul {
+            margin-bottom: 10px;
+        }
+    </style>
 </head>
 <body>
-	<div class="container">
+    <div class="container">
 
-		<h1>Dernière mise à jour de Golpex API</h1>
+        <h1>Dernière mise à jour de Golpex API</h1>
 
-		<h2>Version :</h2>
-		<p>1.0.1</p>
-		<h2>Changements :</h2>
-		<ul>
-			<li>Ajout de la méthode GET ./improve qui prend en argument CONTEXT, PROMPT et RESPONSE et qui retourne une réponse améliorée.</li>
-			<li>Ajout de la méthode GET ./build qui prend en argument CONTEXT et PROMPT et qui retourne une réponse un prompt pour effectuer la tâche du prompt.</li>
-			<li>Ajout de la méthode GET ./music qui prend en argument PROMPT et qui renvoie un flux audio (musique).</li>
-		</ul>
+        <h2>Version :</h2>
+        <p>1.0.3</p>
+        <h2>Changements :</h2>
+        <ul>
+            <li>Suppression de l'endpoint ./build et remplacement par un système GolpexGPT.</li>
+            <li>Ajout des endpoints :
+                <ul>
+                    <li>./GPT/build : renvoie des instructions pour construire un prompt-system pour des agents autonomes.</li>
+                    <li>./GPT/build/get : prend en paramètre TASK et renvoie des instructions pour décider du rôle et de l'objectif de l'agent, ainsi que du format des variables du prompt.</li>
+                    <li>./GPT/build/set : prend en paramètre JSON qui réunit role, goal et format, et renvoie des instructions pour construire un exemple de référence pour le prompt-system.</li>
+                    <li>./GPT/build/create : prend en paramètre JSON qui réunit role, goal, format et example et renvoie le prompt-system avec sa structure finale.</li>
+                </ul>
+            </li>
+        </ul>
 
-		<h2>Version :</h2>
-		<p>1.0.0</p>
-		<h2>Changements :</h2>
-		<p>Création de l'API</p>
-		<ul>
-			<li>Ajout de la méthode GET ./time qui retourne le temps actuel.</li>
-			<li>Ajout de la méthode GET ./initiate qui prend en argument CONTEXT et PROMPT et qui retourne une réponse RESPONSE.</li>
-		</ul>
+        <h2>Version :</h2>
+        <p>1.0.1</p>
+        <h2>Changements :</h2>
+        <ul>
+            <li>Ajout de la méthode GET ./improve qui prend en argument CONTEXT, PROMPT et RESPONSE et qui retourne une réponse améliorée.</li>
+            <li>Ajout de la méthode GET ./build qui prend en argument CONTEXT et PROMPT et qui retourne une réponse un prompt pour effectuer la tâche du prompt.</li>
+            <li>Ajout de la méthode GET ./music qui prend en argument PROMPT et qui renvoie un flux audio (musique).</li>
+        </ul>
 
-	</div>
+        <h2>Version :</h2>
+        <p>1.0.0</p>
+        <h2>Changements :</h2>
+        <p>Création de l'API</p>
+        <ul>
+            <li>Ajout de la méthode GET ./time qui retourne le temps actuel.</li>
+            <li>Ajout de la méthode GET ./initiate qui prend en argument CONTEXT et PROMPT et qui retourne une réponse RESPONSE.</li>
+        </ul>
+
+    </div>
 </body>
 </html>

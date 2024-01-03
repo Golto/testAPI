@@ -151,16 +151,35 @@ app.get('/build', async (req, res) => {
 //						Prompt factory
 
 /*
-Moi : Tâche
-GPT : {"role" : STRING, "goal" : STRING, "format" : STRING}
+GPT >
+	/build : {}
+GolpexAPI >
+	Instructions
+User >
+	Task
+GPT >
+	/build/get : Task
+GolpexAPI >
+	Step 1 Instructions
+GPT > 
+	/build/set : {"role" : STRING, "goal" : STRING, "format" : JSON}
+GolpexAPI >
+	Step 2 Instructions
+GPT > 
+	/build/set : {"role" : STRING, "goal" : STRING, "format" : JSON, "example" : JSON}
+GolpexAPI >
+	Step 3 Instructions
+GPT > 
+	/build/create : {"role" : STRING, "goal" : STRING, "format" : JSON, "example" : JSON}
+GolpexAPI >
+	Final Prompt + Step 4 Instructions
+GPT >
+	show results
+User
+
 */
 app.get('/GPT/build/', async (req, res) => {
-	/*
-	golpexGPT appelle cet endpoint pour connaître la procédure de création d'un prompt d'agent.
-	Étape 1:
-		- Demandez la tâche que doit exécuter l'agent si l'utilisateur ne l'a pas déjà fourni
-		- et appeller l'endpoint /GPT/build/get?task=TASK
-	*/
+
 	response = await readFileContent("./prompts/GPT/build/instructions.txt");
 	res.send(response);
 });

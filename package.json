@@ -1,6 +1,6 @@
 {
     "name": "Golpex",
-    "version": "1.0.1",
+    "version": "1.0.3",
     "description": "API de Golpex : aide à la construction des agents autonomes",
     "main": "api.js",
     "scripts": {
