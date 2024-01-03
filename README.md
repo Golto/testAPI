@@ -8,7 +8,7 @@ This project is an API for "Golpex". It aims to facilitate the production of aut
 Golto
 
 ## Version
-1.0.1
+1.0.3
 
 ## Usage
 To start the project, run:
@@ -25,8 +25,11 @@ http://localhost:3000/initiate?context=CONTEXT&prompt=PROMPT
 Return a response answering your request as `String`.
 
 ./improve [context] [prompt] [response]
-./build [context] [prompt]
 ./music [prompt]
+./GPT/build []
+./GPT/build/get [task]
+./GPT/build/set [json]
+./GPT/build/create [json]
 
 ## Contributing
 Contributions are welcome. Please open an issue or submit a pull request with your suggestions.
