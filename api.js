@@ -330,6 +330,16 @@ function completeResultNode(jsonSelectors, htmlPrompt) {
 	return completedHtml.getHTML();
 }
 
+
+// ----------------------------------------------------------
+//						FORTRAN
+
+app.get('/GPT/fortran/project/start', async (req, res) => {
+
+	response = await readFileContent("./prompts/GPT/fortran/project/instructions.txt");
+	res.send(response);
+});
+
 /* =============================================================
 						LISTEN
 ============================================================= */
