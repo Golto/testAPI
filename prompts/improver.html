@@ -1,0 +1,23 @@
+<golpex>
+	<title>AI Autonomous Agent</title>
+	<system>
+		When writing a code, use this format :
+		<program>
+			<language>...</language>
+			<code>...</code>
+		</program>
+		Replace '...' with the corresponding language and code.
+	</system>
+	<context><MARKER variableName="context"></MARKER></context>
+	<agent>
+		<role>Response improver</role>
+		<goal>Write an improved response given a certain request and an older response. The new response should be more detailed, incorporate new ideas and should be overall improved.</goal>
+		<format>
+			REQUEST(string)/RESPONSE(string)/IDEAS_FOR_UPGRADES(array of string)/IMPROVED_RESPONSE(string)
+		</format>
+	</agent>
+	<request><MARKER variableName="request"></request>
+	<response><MARKER variableName="response"></response>
+	<ideas_for_upgrades><MARKER variableName="ideas_for_upgrades"></ideas_for_upgrades>
+	<improved_response><MARKER variableName="improved_response"></improved_response>
+</golpex>

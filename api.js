@@ -9,11 +9,12 @@
 ============================================================= */
 
 const express = require('express');
-const axios = require('axios');
 const { JSDOM } = require('jsdom');
 const fs = require('fs').promises;
 const app = express();
 const port = 3000;
+
+const query = require('./query');
 
 /* =============================================================
 						API METHODS
@@ -34,8 +35,8 @@ async function readFileContent(path) {
 //						HOME
 // Endpoint pour la politique de confidentialité
 app.get('/', async(req, res) => {
-	PRIVACY_DOC = await readFileContent("./docs/home.html");
-	res.send(PRIVACY_DOC);
+	response = await readFileContent("./docs/home.html");
+	res.send(response);
 });
 
 // ----------------------------------------------------------
@@ -73,7 +74,7 @@ app.get('/music', async (req, res) => {
 	}
 
 	try {
-		const audioBuffer = await promptT2M(prompt);
+		const audioBuffer = await query.promptT2M(prompt);
 		//res.setHeader('Content-Type', 'audio/mpeg');
 		//res.send(audioBuffer);
 		res.send(Array.from(audioBuffer))
@@ -95,6 +96,9 @@ app.get('/ask', async (req, res) => {
 		return res.status(400).send("Les paramètres 'context' et 'prompt' sont requis.");
 	}
 
+	const PRIVACY_DOC = await readFileContent("./docs/privacy.html");
+	const UPDATE_DOC = await readFileContent("./docs/update.html");
+
 	context = PRIVACY_DOC + "\n" + UPDATE_DOC + "\n" + context;
 
 
@@ -104,6 +108,7 @@ app.get('/ask', async (req, res) => {
 });
 
 //http://localhost:3000/initiate?context=monContexte&prompt=monPrompt
+
 
 // ----------------------------------------------------------
 //						IMPROVE
@@ -117,6 +122,9 @@ app.get('/improve', async (req, res) => {
 		return res.status(400).send("Les paramètres 'context', 'prompt' et 'response' sont requis.");
 	}
 
+	const PRIVACY_DOC = await readFileContent("./docs/privacy.html");
+	const UPDATE_DOC = await readFileContent("./docs/update.html");
+
 	context = PRIVACY_DOC + "\n" + UPDATE_DOC + "\n" + context;
 
 
@@ -128,25 +136,21 @@ app.get('/improve', async (req, res) => {
 //http://localhost:3000/improve?context=monContexte&prompt=monPrompt&response=maResponse
 
 // ----------------------------------------------------------
-//						Prompt factory
-/*
-app.get('/build', async (req, res) => {
-
+//						IMPROVE
+app.get('/selecter', async (req, res) => {
 	let context = req.query.context;
-	const prompt = req.query.prompt;
+	const request = req.query.request;
+	const data = req.query.data;
 
 	// Vérifie si les paramètres context et prompt sont fournis
-	if (!context || !prompt) {
-		return res.status(400).send("Les paramètres 'context' et 'prompt' sont requis.");
+	if (!context || !request || !data) {
+		return res.status(400).send("Les paramètres 'context', 'request' et 'data' sont requis.");
 	}
 
-	context = PRIVACY_DOC + "\n" + UPDATE_DOC + "\n" + context;
+	const selectedlines = await TOOLS["selecter"](context, request, data);
 
-	const response = await TOOLS["build"](context, prompt);
-	res.send(response);
+	res.send(selectedlines);
 });
-*/
-
 // ----------------------------------------------------------
 //						Prompt factory
 
@@ -340,6 +344,30 @@ app.get('/GPT/fortran/project/start', async (req, res) => {
 	res.send(response);
 });
 
+// ----------------------------------------------------------
+//						ASK TINIA (chatbot)
+
+app.get('/tinia/ask', async (req, res) => {
+	const context = req.query.context;
+	let conversation = req.query.conversation;
+
+	// Vérifie si les paramètres context et prompt sont fournis
+	if (!context || !conversation) {
+		return res.status(400).send("Les paramètres 'context' et 'conversation' sont requis.");
+	}
+
+	try {
+		conversation = JSON.parse(conversation);
+		const response = await CHATBOT["tinia"](context, conversation);
+		res.send(response);
+	} catch (error) {
+		res.status(500).send(`Erreur: ${error.message}`)
+	}
+});
+
+
+	
+
 /* =============================================================
 						LISTEN
 ============================================================= */
@@ -348,224 +376,7 @@ app.listen(port, () => {
 	console.log(`L'API est en écoute sur le port ${port}`);
 });
 
-/* #########################################################################
-############################################################################
-						Query Library
-############################################################################
-######################################################################### */
 
-/* =============================================================
-						PROMPT REQUEST
-============================================================= */
-
-const MODELS = {
-	// TEXT GENERATION
-	"GPT2": {
-		"name": "gpt2",
-		"max": 1024
-	},
-	"GUANACO_33B": {
-		"name": "timdettmers/guanaco-33b-merged",
-		"max": 2048 // 1024 tokens
-	},
-	"MISTRAL_7B_INSTRUCT": {
-		"name": "mistralai/Mistral-7B-Instruct-v0.1",
-		"max": 24576 // 8000 tokens ~= 3.3 * 8000 = 26000 caractères = 4096 x 6
-	},
-	"MISTRAL_7B": {
-		"name": "mistralai/Mistral-7B-v0.1",
-		"max": 24576 // 8000 tokens ~= 3.3 * 8000 = 26000 caractères = 4096 x 6
-	},
-	"ZEPHYR": {
-		"name": "HuggingFaceH4/zephyr-7b-alpha",
-		"max": 24576
-	},
-	// AUDIO GENERATION
-	
-	"MUSIC_GEN_SMALL": {
-		"name" : "facebook/musicgen-small",
-	},
-	"MUSIC_GEN_MEDIUM": {
-		"name" : "facebook/musicgen-medium",
-	},
-};
-
-// clés gratuites et renouvelables
-const API_KEYS = {
-	"TXT2TXT": "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",
-	"TXT2IMG": "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",
-	"TXT2AUDIO": "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",
-};
-
-let API_COUNTER = {
-	"LLM": 0,	//Large Language Model
-	"TS": 0,	//Text to Speech
-	"T2I": 0,	//Text to Image
-	"ASR": 0, 	//Automatic Speech Recognition
-	"T2M": 0, 	//Text to Music
-};
-
-let CURRENT_MODELS = {
-	"LLM": MODELS["MISTRAL_7B"],
-	"TS" : MODELS["SIMILARITY"],
-	"T2M" : MODELS["MUSIC_GEN_SMALL"]
-};
-
-let CURRENT_GENERATION = {
-	"action" : "None",
-	"pourcent" : "None",
-	"generation" : "None",
-	"isCompleted" : false,
-};
-
-async function query(payload, model, keyAPI) {
-	const API_URL = `https://api-inference.huggingface.co/models/${model}`;
-
-	const response = await axios.post(API_URL, payload, {
-		headers: { Authorization: `Bearer ${keyAPI}` }
-	});
-	return response.data;
-}
-
-async function queryAudio(payload, model, keyAPI) {
-
-	const API_URL = `https://api-inference.huggingface.co/models/${model}`;
-
-	const response = await fetch(
-		API_URL,
-		{
-			headers: { Authorization: `Bearer ${keyAPI}` },
-			method: "POST",
-			body: JSON.stringify(payload),
-		}
-	);
-
-	if (!response.ok) {
-		throw new Error(`Erreur API: ${response.status} ${response.statusText}`);
-	}
-
-	const arrayBuffer = await response.arrayBuffer();
-	const buffer = Buffer.from(arrayBuffer);
-	return buffer;
-}
-
-/* =============================================================
-						PROMPT MANIPULATION FUNCTIONS
-============================================================= */
-
-async function promptLLM(request, maxTokens = 20, repetitionPenalty = 1.1, temperature = 1.0) {
-	request = request.slice(-CURRENT_MODELS['LLM']['max']);
-
-	const response = await query({
-		inputs: request,
-		parameters: {
-			max_new_tokens: maxTokens,
-			repetition_penalty: repetitionPenalty,
-			temperature: temperature
-		}
-	}, CURRENT_MODELS['LLM']['name'], API_KEYS['TXT2TXT']);
-
-	API_COUNTER['LLM']++;
-
-	if (response.error) {
-		throw new Error(`Error: ${response.error}\nEstimated Time: ${response.estimated_time}`);
-	}
-
-	return response[0]['generated_text'];
-}
-
-
-async function promptT2M(request) {
-	
-	const audioBuffer = await queryAudio({
-		"inputs": request
-	}, CURRENT_MODELS['T2M']['name'], API_KEYS['TXT2AUDIO']);
-
-	API_COUNTER['T2M']++;
-
-	return audioBuffer;
-}
-
-
-
-async function promptLoopLLM(request, options = {}, stopList = ['END OF RESPONSE']) {
-	let maxTokens = 20;
-	let repetitionPenalty = 1.1;
-	let temperature = 1.0;
-	let maxLoop = 1;
-
-	if (options.maxTokens) {
-		maxTokens = options.maxTokens;
-	}
-	if (options.repetitionPenalty) {
-		repetitionPenalty = options.repetitionPenalty;
-	}
-	if (options.temperature) {
-		temperature = options.temperature;
-	}
-	if (options.maxLoop) {
-		maxLoop = options.maxLoop;
-	}
-
-	CURRENT_GENERATION.action = request;
-
-	let output = request;
-
-	for (let i = 0; i < maxLoop; i++) {
-		output = await promptLLM(output, maxTokens, repetitionPenalty, temperature);
-		let newTokens = getResponseAfterText(output, request);
-
-		CURRENT_GENERATION.pourcent = `${Math.floor((i / maxLoop) * 10000) / 100}%`;
-		CURRENT_GENERATION.generation = output;
-
-		for (let stop of stopList) {
-			if (newTokens.includes(stop)) {
-				CURRENT_GENERATION.pourcent = "100%";
-				CURRENT_GENERATION.isCompleted = true;
-				return output;
-			}
-		}
-	}
-
-	CURRENT_GENERATION.pourcent = "100%";
-	CURRENT_GENERATION.isCompleted = false;
-
-	return output;
-}
-
-function setPromptMarker(prompt, marker, text) {
-	return prompt.replace(`<MARKER(${marker})>`, text);
-}
-
-function splitPrompt(prompt, marker) {
-	const parts = prompt.split(`<MARKER(${marker})>`);
-	return [parts[0], parts[1]];
-}
-
-function stopGen(text, stopList = ['END OF RESPONSE']) {
-	for (let stop of stopList) {
-		text = text.split(stop)[0];
-	}
-	return text;
-}
-
-function getResponseAfterText(prompt, text) {
-	return prompt.replace(text, "");
-}
-
-async function genPromptMarker(prompt, marker, stopList = ["END OF RESPONSE"], options = {}) {
-	const [beforePrompt, afterPrompt] = splitPrompt(prompt, marker);
-	let output = await promptLoopLLM(beforePrompt, options, stopList);
-	output = getResponseAfterText(output, beforePrompt);
-	output = stopGen(output, stopList);
-
-	return output;
-}
-
-async function setPromptMarkerLLM(prompt, marker, stopList = ["END OF RESPONSE"], options = {}) {
-	const output = await genPromptMarker(prompt, marker, stopList, options);
-	return setPromptMarker(prompt, marker, output);
-}
 
 /* #########################################################################
 ############################################################################
@@ -576,85 +387,6 @@ async function setPromptMarkerLLM(prompt, marker, stopList = ["END OF RESPONSE"]
 /* =============================================================
 						PROMPTS
 ============================================================= */
-
-const prompts = {}
-
-/*
-prompts['initiater'] = `
-<Golpex>
-	<Title>AI Autonomous Agent</title>
-	<System>
-		When writing a code, use this format :
-		<Program>
-			<Language>...</Language>
-			<Code>...</Code>
-		</Program>
-		Replace '...' with the corresponding language and code.
-	</System>
-	<Context><MARKER(context)></Context>
-	<Agent>
-		<Role>Response initiater</Role>
-		<Goal>Write a response given a certain request with details while being organized.</Goal>
-		<Format>
-			REQUEST(string)
-			RESPONSE(string)
-		</Format>
-	</Agent>
-	<Example>
-		<Request>On veut créer une API. On peut envoyer des requête GET à cette API et elle nous renvoie l'heure qu'il est. Créer en javascript un code pour construire une telle API</Request>
-		<Response>
-			Ah, créer une API en JavaScript qui renvoie l'heure, ça sonne comme un projet sympa et assez simple! On va utiliser Node.js avec le framework Express, car c'est une combinaison classique et efficace pour ce genre de tâche. Si t'as pas déjà Express installé, tu peux le faire via npm. Voici un petit exemple de code pour démarrer :
-			<Program>
-				<Language>Javascript</Language>
-				<Code>
-					const express = require('express');
-					const app = express();
-					const port = 3000;
-
-					app.get('/time', (req, res) => {
-					  const currentTime = new Date().toTimeString();
-					  res.send(currentTime);
-					});
-
-					app.listen(port, () => {
-					  console.log(\`L'API est en écoute sur le port \${port}\`);
-					});
-				</Code>
-			</Program>
-			Ce code fait quelques trucs simples :
-
-			- Importe Express.
-			- Crée une application Express.
-			- Définit une route /time qui, lorsqu'elle est appelée via une requête GET, envoie l'heure actuelle.
-			- Lance le serveur pour écouter sur le port 3000.
-			Pour tester, lance le serveur (node nom_du_fichier.js), puis envoie une requête GET à http://localhost:3000/time depuis ton navigateur ou un outil comme Postman. Tu devrais voir l'heure actuelle s'afficher.
-
-			Et voilà, t'as une API toute simple qui te donne l'heure ! 🕒
-		</Response>
-	</Example>
-	<Request><MARKER(request)></Request>
-	<Response><MARKER(response)></Response>
-</Golpex>
-`;
-
-async function initiate(context, request) {
-	let prompt = prompts['initiater'];
-
-	prompt = setPromptMarker(prompt, 'context', context);
-	prompt = setPromptMarker(prompt, 'request', request);
-
-	const options = {
-		maxTokens: 100,
-		maxLoop: 8
-	};
-	const stopList = ["</Response>", "END OF", "\n\n\n\n"];
-
-	const output = await genPromptMarker(prompt, 'response', stopList, options);
-
-	return output;
-}
-*/
-
 
 /* #########################################################################
 ############################################################################
@@ -673,6 +405,10 @@ class Prompt {
 	clone() {
 		return new Prompt(this.getHTML())
 	}
+
+	copy(other) {
+        this.document = other.document.cloneNode(true);
+    }
 
 	addNode(nodeName, parentSelector, content = '') {
 		const parent = this.document.querySelector(parentSelector);
@@ -737,21 +473,22 @@ class Prompt {
 		return this
 	}
 
-	async genMarker(variableName, options, stopList) {
+	async genMarker(variableName, options, stopList, debug=false) {
 		const markers = this.document.querySelectorAll(`marker[variablename="${variableName}"]`);
 		for (const marker of markers) {
 			// Génère une réponse pour la partie avant le marker
 			const promptContent = this.getMarkerPrecedingContent(marker);
-			let generatedText = await promptLoopLLM(promptContent, options, stopList); // Cette fonction doit être définie pour interagir avec LLM
-			generatedText = getResponseAfterText(generatedText, promptContent);
-			generatedText = stopGen(generatedText, stopList);
+			let generatedText = await query.promptLoopLLM(promptContent, options, stopList); // Cette fonction doit être définie pour interagir avec LLM
+			console.log(generatedText)
+			generatedText = query.getResponseAfterText(generatedText, promptContent);
+			generatedText = query.stopGen(generatedText, stopList);
 
 			// Remplace le marker par le texte généré
 			const newNode = this.document.createTextNode(generatedText);
 			marker.parentNode.replaceChild(newNode, marker);
 		}
 
-		console.log(`\n${this.getHTML()}\n$DONE : ${variableName}\n\n\n`)
+		//console.log(`\n${this.getHTML()}\n$DONE : ${variableName}\n\n\n`)
 
 		return this
 	}
@@ -764,7 +501,7 @@ class Prompt {
 		
 		// Construire le sélecteur unique pour ce marker
 		const variableName = marker.getAttribute('variableName');
-		const markerSelector = `<marker variablename="${variableName}">`;
+		const markerSelector = `<marker variablename="${variableName}">`; // todo: améliorer ce split car si il y a des attributs supplémentaires, ça peut ne pas split
 
 		// Splitter le HTML autour du marker
 		const parts = htmlContent.split(markerSelector);
@@ -776,226 +513,72 @@ class Prompt {
 	getHTML() {
 		return this.document.documentElement.outerHTML;
 	}
+
+	getNodeHTML(parentSelector) {
+		const body = this.document.querySelector(parentSelector);
+		return body.outerHTML;
+	}
+
+
+	// utilisé par : selecter
+	formatTextAsLines(text, parentSelector) {
+
+		const parentElement = this.document.querySelector(parentSelector);
+	    if (!parentElement) {
+	        console.error('Parent element not found');
+	        return;
+	    }
+
+	    // Sépare le texte en lignes en utilisant le saut de ligne comme séparateur
+	    const lines = text.split('\n');
+
+	    // Itère sur chaque ligne pour créer la structure demandée
+	    for (let index in lines){
+	    	let line = lines[index];
+	    	
+	    	const lineElement = this.document.createElement('line');
+	        lineElement.textContent = line;
+	        lineElement.setAttribute('number', index.toString());
+	        parentElement.appendChild(lineElement);
+	    }
+
+	    return this
+	}
+
+	//utilisé par : tinia/ask
+	async createConversation(conversation) {
+
+		const messages = conversation.messages;
+		let conversationText = "";
+
+		for (let message of messages) {
+			const sender = message.sender;
+			const content = message.content;
+
+			let template = await readFileContent("./prompts/chat/message.html");
+			let prompt = new Prompt(template);
+
+			prompt.setMarker('sender', sender);
+			prompt.setMarker('content', content);
+			conversationText += `${prompt.getNodeHTML("message")}\n`;
+		}
+
+		this.setMarker('conversation', conversationText);
+
+		let template = this.getNodeHTML('golpex').replaceAll('&gt;','>').replaceAll('&lt;','<');
+		this.copy(new Prompt(template));
+
+		return this
+	}
 }
 
-// Exemple de template
-const promptTemplate = `
-<golpex>
-	<title>Titre Initial</title>
-	<system>Description du système</system>
-	<context><MARKER variableName="context"></MARKER></context>
-	<agent>
-		<role>Rôle de l'agent</role>
-		<goal>Objectif de l'agent</goal>
-		<format>
-			REQUEST(string)
-			RESPONSE(string)
-		</format>
-	</agent>
-	<example>
-		<request>Requête exemple</request>
-		<response>
-			<MARKER variableName="response"></MARKER>
-		</response>
-	</example>
-</golpex>
-`;
 
-
-
-
-prompts['initiater'] = new Prompt(promptTemplate).
-	setNodeContent('title', 'AI Autonomous Agent').
-	setNodeContent('system', `When writing a code, use this format :
-		<program>
-			<language>...</language>
-			<code>...</code>
-		</program>
-		Replace '...' with the corresponding language and code.`).
-	setNodeContent('role', 'Response initiater').
-	setNodeContent('goal', 'Write a response given a certain request with details while being organized.').
-	setNodeContent('request', "On veut créer une API. On peut envoyer des requête GET à cette API et elle nous renvoie l'heure qu'il est. Créer en javascript un code pour construire une telle API").
-	setNodeContent('response', `Ah, créer une API en JavaScript qui renvoie l'heure, ça sonne comme un projet sympa et assez simple! On va utiliser Node.js avec le framework Express, car c'est une combinaison classique et efficace pour ce genre de tâche. Si t'as pas déjà Express installé, tu peux le faire via npm. Voici un petit exemple de code pour démarrer :
-			<program>
-				<language>Javascript</language>
-				<code>
-					const express = require('express');
-					const app = express();
-					const port = 3000;
-
-					app.get('/time', (req, res) => {
-					  const currentTime = new Date().toTimeString();
-					  res.send(currentTime);
-					});
-
-					app.listen(port, () => {
-					  console.log(\`L'API est en écoute sur le port \${port}\`);
-					});
-				</code>
-			</program>
-			Ce code fait quelques trucs simples :
-
-			- Importe Express.
-			- Crée une application Express.
-			- Définit une route /time qui, lorsqu'elle est appelée via une requête GET, envoie l'heure actuelle.
-			- Lance le serveur pour écouter sur le port 3000.
-			Pour tester, lance le serveur (node nom_du_fichier.js), puis envoie une requête GET à http://localhost:3000/time depuis ton navigateur ou un outil comme Postman. Tu devrais voir l'heure actuelle s'afficher.
-
-			Et voilà, t'as une API toute simple qui te donne l'heure ! 🕒`).
-	addNode('request', 'golpex', '').
-	addMarker('request', 'golpex > request').
-	addNode('response', 'golpex', '').
-	addMarker('response', 'golpex > response')
-
-
-
-prompts['improver'] = new Prompt(promptTemplate).
-	setNodeContent('title', 'AI Autonomous Agent').
-	setNodeContent('system', `When writing a code, use this format :
-		<program>
-			<language>...</language>
-			<code>...</code>
-		</program>
-		Replace '...' with the corresponding language and code.`).
-	setNodeContent('role', 'Response improver').
-	setNodeContent('goal', 'Write an improved response given a certain request and an older response. The new response should be more detailed, incorporate new ideas and should be overall improved.').
-	setNodeContent('format', 'REQUEST(string)/RESPONSE(string)/IDEAS_FOR_UPGRADES(array of string)/IMPROVED_RESPONSE(string)').
-	removeNode('example').
-	addNode('request', 'golpex', '').
-	addMarker('request', 'golpex > request').
-	addNode('response', 'golpex', '').
-	addMarker('response', 'golpex > response').
-	addNode('ideas_for_upgrades', 'golpex', '').
-	addMarker('ideas_for_upgrades', 'golpex > ideas_for_upgrades').
-	addNode('improved_response', 'golpex', '').
-	addMarker('improved_response', 'golpex > improved_response')
-
-
-builderTemplate = `<golpex>
-	<title>AI Autonomous Agent</title>
-	<system>
-		When writing a code, use this format :
-		<program>
-			<language>...</language>
-			<code>...</code>
-		</program>
-		Replace '...' with the corresponding language and code.
-	</system>
-	<context><MARKER variableName="context"></MARKER></context>
-	<agent>
-		<role>Prompt Creator</role>
-		<goal>Write an AI Autonomous Agent such as you given a type of task the agent is awaited to do. Provide multiple tags such as title, role, goal, system, context, markers, examples, request, response etc... You may need to add other tags relevant to the specific situation.</goal>
-		<format>
-			task(string)
-			new_agent({
-				role: string,
-				goal: string,
-				markers: [
-					{
-						variableName: string,
-						position: string (e.g., "before request", "after response")
-					},
-					... (more markers as needed)
-				],
-				examples: [
-					{
-						request: string,
-						response: string
-					},
-					... (more examples as needed)
-				],
-				request: string,
-				response: string
-			})
-		</format>
-		<example>
-			<task>Create a prompt that build websites</task>
-			<new_agent>
-				<reasonning>What sould be the role/name of this agent ?</reasonning>
-				<reasonning>Since this is an agent specialized in building websites, the role should be Web Developper.</reasonning>
-				<role>Web Developper</role>
-				<reasonning>What sould the agent try to achieve ? What is its goal ?</reasonning>
-				<reasonning>As a Web Developper, the agent should build websites. It needs to build an HTML file, a CSS file and a Javascript file.</reasonning>
-				<goal>Given a request create a website with a HTML, a CSS and Javascript file.</goal>
-				<reasonning>Multiple variables are needed such as a request from the user to specify the website wanted and html, css, javascript that are "program type".</reasonning>
-				<format>
-					request(string)
-					html({
-						program: {
-							language: string,
-							code: string,
-						}
-					})
-					css({
-						program: {
-							language: string,
-							code: string,
-						}
-					})
-					javascript({
-						program: {
-							language: string,
-							code: string,
-						}
-					})
-				</format>
-				<request>createMarker("request")</request>
-				<html>createMarker("html")</html>
-				<css>createMarker("css")</css>
-				<javascript>createMarker("javascript")</javascript>
-
-				<!-- Additional specific tags for this agent -->
-			</new_agent>
-		</example>
-	</agent>
-	
-	<task><MARKER variableName="task"></task>
-	
-	<new_agent>
-		<reasonning>What sould be the role/name of this agent ?</reasonning>
-		<reasonning><MARKER variableName="reasonning_role"></reasonning>
-		<role><MARKER variableName="role"></role>
-		<reasonning>What sould the agent try to achieve ? What is its goal ?</reasonning>
-		<reasonning><MARKER variableName="reasonning_goal"></reasonning>
-		<goal><MARKER variableName="goal"></goal>
-		<reasonning>Which are the variables needed and what types to they need to have ?</reasonning>
-		<reasonning><MARKER variableName="reasonning_format"></reasonning>
-		<format>
-			<MARKER variableName="format">
-		</format>
-		<example>
-			<MARKER variableName="example">
-		</example>
-	</new_agent>
-
-</golpex>
-`
-prompts['builder'] = new Prompt(builderTemplate);
-/*
-prompts['builder'] = new Prompt(promptTemplate).
-	setNodeContent('title', 'AI Autonomous Agent').
-	setNodeContent('system', `When writing a code, use this format :
-		<program>
-			<language>...</language>
-			<code>...</code>
-		</program>
-		Replace '...' with the corresponding language and code.`).
-	setNodeContent('role', 'Prompt Creator').
-	setNodeContent('goal', 'Write an AI Autonomous Agent such as you given a type of task the agent is awaited to do. Provide multiple tags such as title, role, goal, system, context, markers, examples, request, response etc... You may need to add other tags relevant to the specific situation.').
-	removeNode('example').
-	addNode('task', 'golpex', '').
-	addMarker('task', 'golpex > task').
-	addNode('????')
-	addNode('response', 'golpex', '').
-	addMarker('response', 'golpex > response')
-*/
-
-//console.log(prompts['improver'].getHTML())
 
 const TOOLS = {
 
 	initiate : async (context, request) => {
-		let prompt = prompts['initiater'].clone();
+		let template = await readFileContent("./prompts/initiater.html");
+		let prompt = new Prompt(template);
 
 		prompt.setMarker('context', context)
 		prompt.setMarker('request', request)
@@ -1012,7 +595,8 @@ const TOOLS = {
 	},
 
 	improve : async (context, request, response) => {
-		let prompt = prompts['improver'].clone();
+		let template = await readFileContent("./prompts/improver.html");
+		let prompt = new Prompt(template);
 
 		prompt.setMarker('context', context)
 		prompt.setMarker('request', request)
@@ -1030,65 +614,107 @@ const TOOLS = {
 		return prompt.getNodeContent('golpex > improved_response');
 	},
 
-	build : async (context, task) => {
-		let prompt = prompts['builder'].clone();
+	selecter : async (context, request, data) => {
+		let template = await readFileContent("./prompts/selecter.html");
+		let prompt = new Prompt(template);
 
-		prompt.setMarker('context', context)
-		prompt.setMarker('task', task)
+		prompt.setMarker('context', context);
+		prompt.setMarker('request', request);
 
-		const options_long = {
-			maxTokens: 100,
-			maxLoop: 8
-		};
-		const options_short = {
+		//data = await readFileContent("./_debug/demo_1.py");
+
+		prompt.formatTextAsLines(data, 'result > data');
+
+		const options = {
 			maxTokens: 50,
-			maxLoop: 5
+			maxLoop: 4
 		};
-		const stopList = ["</reasonning>", "</role>", "</goal>", "</format>", "</example>", "\n\n\n\n"];
 
-		await prompt.genMarker('reasonning_role', options_long, stopList)
-		await prompt.genMarker('role', options_short, stopList)
-		await prompt.genMarker('reasonning_goal', options_long, stopList)
-		await prompt.genMarker('goal', options_short, stopList)
-		await prompt.genMarker('reasonning_format', options_long, stopList)
-		await prompt.genMarker('format', options_long, stopList)
-		await prompt.genMarker('example', options_long, stopList)
+		const stopList = ["</selectedlines>", "\n\n\n\n"];
 
-		role = prompt.getNodeContent('golpex > new_agent > role');
-		goal = prompt.getNodeContent('golpex > new_agent > goal');
-		format = prompt.getNodeContent('golpex > new_agent > format');
-		example = prompt.getNodeContent('golpex > new_agent > example');
+		await prompt.genMarker('selectedLines', options, stopList);
 
-		// peut largement être amélioré
-		// - vitesse d'éxécution
-		// - généralisation (prompt plus spécifique à la tâche)
-
-		newPromptTemplate = `<Golpex>
-	<Title>AI Autonomous Agent</title>
-	<System>
-		When writing a code, use this format :
-		<Program>
-			<Language>...</Language>
-			<Code>...</Code>
-		</Program>
-		Replace '...' with the corresponding language and code.
-	</System>
-	<Context><MARKER variableName="context"></Context>
-	<Agent>
-		<Role>${role}</Role>
-		<Goal>${goal}</Goal>
-		<Format>
-			${format}
-		</Format>
-	</Agent>
-	<Example>
-		${example}
-	</Example>
-	<Request><MARKER variableName="request"></Request>
-	<Response><MARKER variableName="response"></Response>
-</Golpex>`
-
-		return newPromptTemplate;
+		const arrayText = prompt.getNodeContent('golpex > results > result > selectedlines');
+		const arrayLines = arrayText.slice(1, -1).split(',').map(n => Number(n.trim()));
+		return arrayLines;
 	},
 
 }
+
+
+/*
+localhost:3000/tinia/ask?context=%22none%22&conversation={%20%22messages%22%20:%20[%20{%20%22sender%22%20:%20%22tinia%22,%20%22content%22%20:%20%22Hi!%20How%20can%20I%20help%20you%22%20},%20{%20%22sender%22%20:%20%22user%22,%20%22content%22%20:%20%22I%20m%20going%20to%20cook%20for%20my%20date%20who%20claims%20to%20be%20a%20picky%20eater.%20Can%20you%20recommend%20me%20a%20dish%20that%20s%20easy%20to%20cook?%22%20},%20{%20%22sender%22%20:%20%22tinia%22,%20%22content%22%20:%20%22Cooking%20for%20a%20picky%20eater%20can%20be%20a%20bit%20like%20walking%20a%20culinary%20tightrope,%20huh?%20How%20about%20playing%20it%20safe%20with%20something%20like%20Chicken%20Alfredo%20Pasta?%20It%27s%20pretty%20straightforward,%20hard%20to%20go%20wrong%20with,%20and%20most%20picky%20eaters%20don%27t%20object%20to%20it.%20The%20creamy%20sauce%20and%20tender%20chicken%20over%20pasta%20is%20like%20the%20Switzerland%20of%20dinner%20dishes%20%E2%80%93%20neutral%20and%20likable%20by%20many!%20Plus,%20it%27s%20quick%20to%20whip%20up,%20leaving%20you%20more%20time%20to%20focus%20on%20your%20date%20rather%20than%20being%20chained%20to%20the%20stove.%20Would%20you%20like%20a%20simple%20recipe%20for%20it?%22%20},%20{%20%22sender%22%20:%20%22user%22,%20%22content%22%20:%20%22Yes%20please,%20it%20would%20be%20great%20!%22%20}%20]%20}
+*/
+
+
+const CHATBOT = {
+
+	tinia : async (context, conversation) => {
+		let template = await readFileContent("./prompts/chat/tinia.html");
+		let prompt = new Prompt(template);
+
+		prompt.setMarker('context', context);
+		await prompt.createConversation(conversation);
+
+		const options = {
+			maxTokens: 100,
+			maxLoop: 8
+		};
+		const stopList = ["</message>", "</sender>", "</content>", "</conversation>", "\n\n\n\n"];
+
+		await prompt.genMarker('content', options, stopList, true);
+
+		return prompt.getNodeHTML('golpex');
+	},
+}
+/*
+	try {
+		const data = JSON.parse(json);
+		const { role, goal, format } = data;
+
+		if (!role || !goal || !format) {
+			return res.status(400).send("Les paramètres 'role', 'goal' et 'format' du fichier JSON sont requis.");
+		}
+
+		let response = await readFileContent("./prompts/GPT/build/set.txt");
+		response = response.replace("[GOLPEX_VARIABLE:ROLE]", role);
+		response = response.replace("[GOLPEX_VARIABLE:GOAL]", goal);
+		response = response.replace("[GOLPEX_VARIABLE:FORMAT]", JSON.stringify(format));
+		response = response.replace("[GOLPEX_VARIABLE:EXAMPLE]", jsonToHtml(format));
+
+		res.send(response);
+
+{
+	"messages" : [
+		{
+			"sender" : "tinia",
+			"content" : "Hi! How can I help you"
+		},
+		{
+			"sender" : "user",
+			"content" : "I m going to cook for my date who claims to be a picky eater. Can you recommend me a dish that s easy to cook?"
+		},
+		{
+			"sender" : "tinia",
+			"content" : "Cooking for a picky eater can be a bit like walking a culinary tightrope, huh? How about playing it safe with something like Chicken Alfredo Pasta? It's pretty straightforward, hard to go wrong with, and most picky eaters don't object to it. The creamy sauce and tender chicken over pasta is like the Switzerland of dinner dishes – neutral and likable by many! Plus, it's quick to whip up, leaving you more time to focus on your date rather than being chained to the stove. Would you like a simple recipe for it?"
+		},
+		{
+			"sender" : "user",
+			"content" : "Yes please!"
+		}
+	]
+}
+
+{
+	"messages" : [
+		{
+			"sender" : "tinia",
+			"content" : "Hi! How can I help you"
+		},
+		{
+			"sender" : "user",
+			"content" : "I need help with a python function !!! I need a factorial function."
+		}
+	]
+}
+*/

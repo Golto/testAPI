@@ -43,13 +43,13 @@ The goal of "LinearSolver" is to develop a FORTRAN-based software package that e
 
 # Step 1: Project Structure:
 
-src (source code directory):
-- jacobi.f90: Contains the Jacobi method implementation.
-- gauss_seidel.f90: Contains the Gauss-Seidel method implementation.
-- relaxation.f90: Contains the Relaxation method implementation.
-- main.f90: The main program that uses these methods.
-include (directory for any module or shared code):
-- linear_algebra_mod.f90: A module for shared linear algebra procedures and functions.
+- src (source code directory):
+ - jacobi.f90: Contains the Jacobi method implementation.
+ - gauss_seidel.f90: Contains the Gauss-Seidel method implementation.
+ - relaxation.f90: Contains the Relaxation method implementation.
+ - main.f90: The main program that uses these methods.
+- include (directory for any module or shared code):
+ - linear_algebra_mod.f90: A module for shared linear algebra procedures and functions.
 Makefile: For compiling and linking the code.
 
 # Implementation Outline:

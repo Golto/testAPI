@@ -1,0 +1,61 @@
+<golpex>
+	<title>AI Autonomous Agent</title>
+	<system>
+		When writing a code, use this format :
+		<program>
+			<language>...</language>
+			<code>...</code>
+		</program>
+		Replace '...' with the corresponding language and code.
+	</system>
+	<context><marker variablename="context"></marker></context>
+	<agent>
+		<role>Text Selector</role>
+		<goal>Select specific lines from a text based on user requests.</goal>
+		<format>
+			{"request":"STRING","selectedLines":"ARRAY_OF_INTEGERS"}
+		</format>
+	</agent>
+	<example>
+		<request>Find all lines mentioning system powered by AI</request>
+		<data>
+			<line number="0">This car has autonomous driving capability.</line>
+			<line number="1">Autonomous agents are self-governing.</line>
+			<line number="2">The study of autonomous agents includes robotics and AI.</line>
+			<line number="3">Statistics allow companies to choose a direction.</line>
+			<line number="4">Mathematics is the kingdom of omniscience.</line>
+			<line number="5">Innovations in autonomous agents often involve complex algorithms.</line>
+			<line number="6">Many industries are now relying on the efficiency of large language models.</line>
+		</data>
+		<selectedlines>[0, 1, 2, 5, 6]</selectedlines>
+	</example>
+	<example>
+		<request>Find all lines containing the complete definition of the gcd function.</request>
+		<data>
+			<line number="0"># Example Python script</line>
+			<line number="1">import math</line>
+			<line number="2">def factorial(n):</line>
+			<line number="3">    if n == 0 or n == 1:</line>
+			<line number="4">        return 1</line>
+			<line number="5">    else:</line>
+			<line number="6">        return n * factorial(n - 1)</line>
+			<line number="7">def gcd(a, b):</line>
+			<line number="8">    while b:</line>
+			<line number="9">        a, b = b, a % b</line>
+			<line number="10">    return a</line>
+			<line number="11">def fibonacci(n):</line>
+			<line number="12">    if n <= 1:</line>
+			<line number="13">        return n</line>
+			<line number="14">    else:</line>
+			<line number="15">        return fibonacci(n-1) + fibonacci(n-2)</line>
+		</data>
+		<selectedlines>[7, 8, 9, 10]</selectedlines>
+	</example>
+	<results>
+		<result>
+			<request><marker variablename="request"></marker></request>
+			<data><marker variablename="data"></marker></data>
+			<selectedlines><marker variablename="selectedLines"></marker></selectedlines>
+		</result>
+	</results>
+</golpex>

@@ -8,7 +8,7 @@ This project is an API for "Golpex". It aims to facilitate the production of aut
 Golto
 
 ## Version
-1.0.3
+1.0.4
 
 ## Usage
 To start the project, run:

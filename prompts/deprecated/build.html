@@ -1,0 +1,98 @@
+<golpex>
+	<title>AI Autonomous Agent</title>
+	<system>
+		When writing a code, use this format :
+		<program>
+			<language>...</language>
+			<code>...</code>
+		</program>
+		Replace '...' with the corresponding language and code.
+	</system>
+	<context><MARKER variableName="context"></MARKER></context>
+	<agent>
+		<role>Prompt Creator</role>
+		<goal>Write an AI Autonomous Agent such as you given a type of task the agent is awaited to do. Provide multiple tags such as title, role, goal, system, context, markers, examples, request, response etc... You may need to add other tags relevant to the specific situation.</goal>
+		<format>
+			task(string)
+			new_agent({
+				role: string,
+				goal: string,
+				markers: [
+					{
+						variableName: string,
+						position: string (e.g., "before request", "after response")
+					},
+					... (more markers as needed)
+				],
+				examples: [
+					{
+						request: string,
+						response: string
+					},
+					... (more examples as needed)
+				],
+				request: string,
+				response: string
+			})
+		</format>
+		<example>
+			<task>Create a prompt that build websites</task>
+			<new_agent>
+				<reasonning>What sould be the role/name of this agent ?</reasonning>
+				<reasonning>Since this is an agent specialized in building websites, the role should be Web Developper.</reasonning>
+				<role>Web Developper</role>
+				<reasonning>What sould the agent try to achieve ? What is its goal ?</reasonning>
+				<reasonning>As a Web Developper, the agent should build websites. It needs to build an HTML file, a CSS file and a Javascript file.</reasonning>
+				<goal>Given a request create a website with a HTML, a CSS and Javascript file.</goal>
+				<reasonning>Multiple variables are needed such as a request from the user to specify the website wanted and html, css, javascript that are "program type".</reasonning>
+				<format>
+					request(string)
+					html({
+						program: {
+							language: string,
+							code: string,
+						}
+					})
+					css({
+						program: {
+							language: string,
+							code: string,
+						}
+					})
+					javascript({
+						program: {
+							language: string,
+							code: string,
+						}
+					})
+				</format>
+				<request>createMarker("request")</request>
+				<html>createMarker("html")</html>
+				<css>createMarker("css")</css>
+				<javascript>createMarker("javascript")</javascript>
+
+				<!-- Additional specific tags for this agent -->
+			</new_agent>
+		</example>
+	</agent>
+	
+	<task><MARKER variableName="task"></task>
+	
+	<new_agent>
+		<reasonning>What sould be the role/name of this agent ?</reasonning>
+		<reasonning><MARKER variableName="reasonning_role"></reasonning>
+		<role><MARKER variableName="role"></role>
+		<reasonning>What sould the agent try to achieve ? What is its goal ?</reasonning>
+		<reasonning><MARKER variableName="reasonning_goal"></reasonning>
+		<goal><MARKER variableName="goal"></goal>
+		<reasonning>Which are the variables needed and what types to they need to have ?</reasonning>
+		<reasonning><MARKER variableName="reasonning_format"></reasonning>
+		<format>
+			<MARKER variableName="format">
+		</format>
+		<example>
+			<MARKER variableName="example">
+		</example>
+	</new_agent>
+
+</golpex>
