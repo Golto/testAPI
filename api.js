@@ -16,6 +16,13 @@ const port = 3000;
 
 const query = require('./query');
 
+
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+  next();
+});
+
 /* =============================================================
 						API METHODS
 ============================================================= */
@@ -664,7 +671,8 @@ const CHATBOT = {
 
 		await prompt.genMarker('content', options, stopList, true);
 
-		return prompt.getNodeHTML('golpex');
+		//return prompt.getNodeHTML('golpex');
+		return prompt.getNodeContent('golpex > result > message > content');
 	},
 }
 /*
