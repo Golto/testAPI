@@ -394,7 +394,27 @@ app.post('/tinia/ask', async (req, res) => {
     }
 });
 
-	
+/*
+fetch('http://localhost:3000/tinia/ask', {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ context: "your_context", conversation: "your_conversation" })
+})
+.then(response => response.json())
+.then(data => console.log(data))
+.catch((error) => console.error('Error:', error));
+
+*/
+
+
+app.post('/data', (req, res) => {
+    const { name, age } = req.body;
+    const description = `Salut ${name}, tu as ${age} ans.`;
+
+    res.json({ description: description });
+});
 
 /* =============================================================
 						LISTEN
