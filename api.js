@@ -9,18 +9,19 @@
 ============================================================= */
 
 const express = require('express');
-const { JSDOM } = require('jsdom');
+//const { JSDOM } = require('jsdom'); // todo : suppr
 const fs = require('fs').promises;
 const app = express();
 const port = 3000;
 
-const query = require('./query');
+const query = require('./query'); // ne sert que pour /music
+const promptManager = require('./promptManager');
 
 
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
-  next();
+	res.header('Access-Control-Allow-Origin', '*');
+	res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+	next();
 });
 
 /* =============================================================
@@ -291,10 +292,10 @@ app.get('/GPT/build/create', async (req, res) => {
 		response = addResultNode(response, format);
 
 		response = completeResultNode(example, response);
-		temp = response;
+		//temp = response;
 
-		response = await readFileContent("./prompts/GPT/build/create2.txt");
-		response = response.replace("[GOLPEX_VARIABLE:PROMPT]", temp);
+		//response = await readFileContent("./prompts/GPT/build/create2.txt");
+		//response = response.replace("[GOLPEX_VARIABLE:PROMPT]", temp);
 
 		res.send(response);
 
@@ -306,39 +307,39 @@ app.get('/GPT/build/create', async (req, res) => {
 function completeExampleNode(jsonSelectors, htmlPrompt) {
 
 
-	let completedHtml = new Prompt(htmlPrompt);
+	let completedHtml = new promptManager.Prompt(htmlPrompt);
 
 	for(let key in jsonSelectors){
 		value = jsonSelectors[key];
 		completedHtml.setNodeContent(key.toLowerCase(), value);
 	}
 
-	return completedHtml.getHTML();
+	return completedHtml.toString();
 }
 
 function addResultNode(htmlPrompt, format){
 
-	let completedHtml = new Prompt(htmlPrompt);
+	let completedHtml = new promptManager.Prompt(htmlPrompt);
 
 	completedHtml.addNode("results", "golpex");
 	completedHtml.addNodeContent("results", "[GOLPEX_VARIABLE:RESULTS]");
 
-	return completedHtml.getHTML().replace("[GOLPEX_VARIABLE:RESULTS]", jsonToHtml(format, "result"));
+	return completedHtml.toString().replace("[GOLPEX_VARIABLE:RESULTS]", jsonToHtml(format, "result"));
 }
 
 function completeResultNode(jsonSelectors, htmlPrompt) {
 
 
-	let completedHtml = new Prompt(htmlPrompt);
+	let completedHtml = new promptManager.Prompt(htmlPrompt);
 
 	for(let key in jsonSelectors){
 		
-		key = key.replace('example >', 'result >')
+		key = key.replace('example >', 'result >').replace('Example >', 'result >')
 		completedHtml.setNodeContent(key, "");
 		completedHtml.addMarker(key.replace('result > ',''), key);
 	}
 
-	return completedHtml.getHTML();
+	return completedHtml.toString();
 }
 
 
@@ -372,6 +373,23 @@ app.get('/tinia/ask', async (req, res) => {
 	}
 });
 
+app.post('/tinia/ask', async (req, res) => {
+    const context = req.body.context;
+    let conversation = req.body.conversation;
+
+    // Vérifie si les paramètres context et conversation sont fournis
+    if (!context || !conversation) {
+        return res.status(400).send("Les paramètres 'context' et 'conversation' sont requis.");
+    }
+
+    try {
+        conversation = JSON.parse(conversation);
+        const response = await CHATBOT["tinia"](context, conversation);
+        res.send(response);
+    } catch (error) {
+        res.status(500).send(`Erreur: ${error.message}`);
+    }
+});
 
 	
 
@@ -381,7 +399,120 @@ app.get('/tinia/ask', async (req, res) => {
 
 app.listen(port, () => {
 	console.log(`L'API est en écoute sur le port ${port}`);
+
+	startDebug();
 });
+
+const TEST = `<message>
+	<sender><marker variableName="sender"></marker></sender>
+	<content>
+		<modalities>
+			<marker variableName="content"></marker>
+		</modalities>
+	</content>
+</message>`
+
+const TEST2 = `<message>
+	<sender><marker variableName="sender"></marker></sender>
+	<content>
+		bonjour
+	</content>
+</message>`
+
+async function startDebug(){
+	console.log('================= START DEBUG =================');
+
+	/*
+	let prompt = new promptManager.Prompt(TEST);
+
+	const options = {
+			maxTokens: 100,
+			maxLoop: 8
+		};
+	const stopList = ["</message>", "</sender>", "</content>", "</conversation>", "\n\n\n\n"];
+
+
+	await prompt.genMarker('content', options, stopList, true)
+
+	console.log("RESULT ::",prompt.toString());
+	*/
+	/*
+	let message = {
+		"sender" : "user",
+		"content" : [
+			{
+				"modality" : "audio",
+				"content" : {
+					"type" : "speech",
+					"voice" : "voice owner",
+					"transcription" : "this is a transcription"
+				}
+			},
+			{
+				"modality" : "text",
+				"content" : "bonjour texte"
+			},
+			{
+				"modality" : "image",
+				"content" : {
+					"description" : "this is a description"
+				}
+			}
+		]
+	}
+	let text = await promptManager.createMessage(message.sender, message.content)
+	console.log(text)
+	*/
+	
+	let convo = {
+		"messages" : [
+			{
+				"sender" : "tinia",
+				"content" : [
+					{
+						"modality" : "text",
+						"content" : "Hi! How can I help you"
+					}
+				]
+			},
+			{
+				"sender" : "user",
+				"content" : [
+					{
+						"modality" : "text",
+						"content" : "I m going to cook for my date who claims to be a picky eater. Can you recommend me a dish that s easy to cook?"
+					}
+				]
+			},
+			{
+				"sender" : "tinia",
+				"content" : [
+					{
+						"modality" : "text",
+						"content" : "Cooking for a picky eater can be a bit like walking a culinary tightrope, huh? How about playing it safe with something like Chicken Alfredo Pasta? It's pretty straightforward, hard to go wrong with, and most picky eaters don't object to it. The creamy sauce and tender chicken over pasta is like the Switzerland of dinner dishes – neutral and likable by many! Plus, it's quick to whip up, leaving you more time to focus on your date rather than being chained to the stove. Would you like a simple recipe for it?"
+					}
+				]
+			},
+			{
+				"sender" : "user",
+				"content" : [
+					{
+						"modality" : "text",
+						"content" : "Before that, show me what it looks like !"
+					}
+				]
+			}
+		]
+	}
+	/*
+	let text = await promptManager.createConversation(convo)
+	console.log(text)
+
+	*/
+
+	//let text = await CHATBOT['tinia']('', convo);
+	//console.log(text)
+}
 
 
 
@@ -402,190 +533,11 @@ app.listen(port, () => {
 ######################################################################### */
 
 
-
-class Prompt {
-	constructor(template) {
-		const dom = new JSDOM(template);
-		this.document = dom.window.document;
-	}
-
-	clone() {
-		return new Prompt(this.getHTML())
-	}
-
-	copy(other) {
-        this.document = other.document.cloneNode(true);
-    }
-
-	addNode(nodeName, parentSelector, content = '') {
-		const parent = this.document.querySelector(parentSelector);
-		const newNode = this.document.createElement(nodeName);
-		newNode.textContent = content;
-		parent.appendChild(newNode);
-		return this
-	}
-
-	setNodeContent(selector, content = '') {
-		const node = this.document.querySelector(selector);
-		if (node) {
-			node.textContent = content;
-		} else {
-			console.warn(`No node found for selector: ${selector}`);
-		}
-		return this;
-	}
-
-	addNodeContent(selector, content = '') {
-		const node = this.document.querySelector(selector);
-		if (node) {
-			node.textContent += content;
-		} else {
-			console.warn(`No node found for selector: ${selector}`);
-		}
-		return this;
-	}
-
-	getNodeContent(selector) {
-		const node = this.document.querySelector(selector);
-		if (node) {
-			return node.textContent;
-		} else {
-			console.warn(`No node found for selector: ${selector}`);
-			return null;
-		}
-	}
-
-	removeNode(selector) {
-		const node = this.document.querySelector(selector);
-		if (node) {
-			node.parentNode.removeChild(node);
-		}
-		return this
-	}
-
-	addMarker(variableName, parentSelector) {
-		const parent = this.document.querySelector(parentSelector);
-		const newNode = this.document.createElement("Marker");
-		newNode.setAttribute("variableName", variableName);
-		parent.appendChild(newNode);
-		return this
-	}
-
-	setMarker(variableName, value) {
-		const markers = this.document.querySelectorAll(`MARKER[variableName="${variableName}"]`);
-		markers.forEach(marker => {
-			const newNode = this.document.createTextNode(value);
-			marker.parentNode.replaceChild(newNode, marker);
-		});
-		return this
-	}
-
-	async genMarker(variableName, options, stopList, debug=false) {
-		const markers = this.document.querySelectorAll(`marker[variablename="${variableName}"]`);
-		for (const marker of markers) {
-			// Génère une réponse pour la partie avant le marker
-			const promptContent = this.getMarkerPrecedingContent(marker);
-			let generatedText = await query.promptLoopLLM(promptContent, options, stopList); // Cette fonction doit être définie pour interagir avec LLM
-			console.log(generatedText)
-			generatedText = query.getResponseAfterText(generatedText, promptContent);
-			generatedText = query.stopGen(generatedText, stopList);
-
-			// Remplace le marker par le texte généré
-			const newNode = this.document.createTextNode(generatedText);
-			marker.parentNode.replaceChild(newNode, marker);
-		}
-
-		//console.log(`\n${this.getHTML()}\n$DONE : ${variableName}\n\n\n`)
-
-		return this
-	}
-
-	getMarkerPrecedingContent(marker) {
-		// Implémente la logique pour obtenir le contenu précédant le marker
-
-		// Obtenir le HTML complet
-		const htmlContent = this.getHTML();
-		
-		// Construire le sélecteur unique pour ce marker
-		const variableName = marker.getAttribute('variableName');
-		const markerSelector = `<marker variablename="${variableName}">`; // todo: améliorer ce split car si il y a des attributs supplémentaires, ça peut ne pas split
-
-		// Splitter le HTML autour du marker
-		const parts = htmlContent.split(markerSelector);
-
-		// Retourner le contenu avant le marker
-		return parts[0];
-	}
-
-	getHTML() {
-		return this.document.documentElement.outerHTML;
-	}
-
-	getNodeHTML(parentSelector) {
-		const body = this.document.querySelector(parentSelector);
-		return body.outerHTML;
-	}
-
-
-	// utilisé par : selecter
-	formatTextAsLines(text, parentSelector) {
-
-		const parentElement = this.document.querySelector(parentSelector);
-	    if (!parentElement) {
-	        console.error('Parent element not found');
-	        return;
-	    }
-
-	    // Sépare le texte en lignes en utilisant le saut de ligne comme séparateur
-	    const lines = text.split('\n');
-
-	    // Itère sur chaque ligne pour créer la structure demandée
-	    for (let index in lines){
-	    	let line = lines[index];
-	    	
-	    	const lineElement = this.document.createElement('line');
-	        lineElement.textContent = line;
-	        lineElement.setAttribute('number', index.toString());
-	        parentElement.appendChild(lineElement);
-	    }
-
-	    return this
-	}
-
-	//utilisé par : tinia/ask
-	async createConversation(conversation) {
-
-		const messages = conversation.messages;
-		let conversationText = "";
-
-		for (let message of messages) {
-			const sender = message.sender;
-			const content = message.content;
-
-			let template = await readFileContent("./prompts/chat/message.html");
-			let prompt = new Prompt(template);
-
-			prompt.setMarker('sender', sender);
-			prompt.setMarker('content', content);
-			conversationText += `${prompt.getNodeHTML("message")}\n`;
-		}
-
-		this.setMarker('conversation', conversationText);
-
-		let template = this.getNodeHTML('golpex').replaceAll('&gt;','>').replaceAll('&lt;','<');
-		this.copy(new Prompt(template));
-
-		return this
-	}
-}
-
-
-
 const TOOLS = {
 
 	initiate : async (context, request) => {
 		let template = await readFileContent("./prompts/initiater.html");
-		let prompt = new Prompt(template);
+		let prompt = new promptManager.Prompt(template);
 
 		prompt.setMarker('context', context)
 		prompt.setMarker('request', request)
@@ -603,7 +555,7 @@ const TOOLS = {
 
 	improve : async (context, request, response) => {
 		let template = await readFileContent("./prompts/improver.html");
-		let prompt = new Prompt(template);
+		let prompt = new promptManager.Prompt(template);
 
 		prompt.setMarker('context', context)
 		prompt.setMarker('request', request)
@@ -623,7 +575,7 @@ const TOOLS = {
 
 	selecter : async (context, request, data) => {
 		let template = await readFileContent("./prompts/selecter.html");
-		let prompt = new Prompt(template);
+		let prompt = new promptManager.Prompt(template);
 
 		prompt.setMarker('context', context);
 		prompt.setMarker('request', request);
@@ -658,60 +610,72 @@ const CHATBOT = {
 
 	tinia : async (context, conversation) => {
 		let template = await readFileContent("./prompts/chat/tinia.html");
-		let prompt = new Prompt(template);
+		let prompt = new promptManager.Prompt(template);
 
 		prompt.setMarker('context', context);
-		await prompt.createConversation(conversation);
+
+		conversation = await promptManager.createConversation(prompt, conversation);
+		prompt.setMarker('conversation', conversation, true);
 
 		const options = {
 			maxTokens: 100,
 			maxLoop: 8
 		};
-		const stopList = ["</message>", "</sender>", "</content>", "</conversation>", "\n\n\n\n"];
+		const stopList = ["</output>", "\n\n\n\n"];
 
 		await prompt.genMarker('content', options, stopList, true);
 
-		//return prompt.getNodeHTML('golpex');
-		return prompt.getNodeContent('golpex > result > message > content');
+		return prompt.getNodeHTML('golpex > result > output'); // convertir en messages json
 	},
 }
 /*
-	try {
-		const data = JSON.parse(json);
-		const { role, goal, format } = data;
 
-		if (!role || !goal || !format) {
-			return res.status(400).send("Les paramètres 'role', 'goal' et 'format' du fichier JSON sont requis.");
-		}
-
-		let response = await readFileContent("./prompts/GPT/build/set.txt");
-		response = response.replace("[GOLPEX_VARIABLE:ROLE]", role);
-		response = response.replace("[GOLPEX_VARIABLE:GOAL]", goal);
-		response = response.replace("[GOLPEX_VARIABLE:FORMAT]", JSON.stringify(format));
-		response = response.replace("[GOLPEX_VARIABLE:EXAMPLE]", jsonToHtml(format));
-
-		res.send(response);
-
+localhost:3000/tinia/ask?context=Tinia is happy&conversation=
 {
 	"messages" : [
 		{
 			"sender" : "tinia",
-			"content" : "Hi! How can I help you"
+			"content" : [
+				{
+					"modality" : "text",
+					"content" : "Hi! How can I help you"
+				}
+			]
 		},
 		{
 			"sender" : "user",
-			"content" : "I m going to cook for my date who claims to be a picky eater. Can you recommend me a dish that s easy to cook?"
+			"content" : [
+				{
+					"modality" : "text",
+					"content" : "I m going to cook for my date who claims to be a picky eater. Can you recommend me a dish that s easy to cook?"
+				}
+			]
 		},
 		{
 			"sender" : "tinia",
-			"content" : "Cooking for a picky eater can be a bit like walking a culinary tightrope, huh? How about playing it safe with something like Chicken Alfredo Pasta? It's pretty straightforward, hard to go wrong with, and most picky eaters don't object to it. The creamy sauce and tender chicken over pasta is like the Switzerland of dinner dishes – neutral and likable by many! Plus, it's quick to whip up, leaving you more time to focus on your date rather than being chained to the stove. Would you like a simple recipe for it?"
+			"content" : [
+				{
+					"modality" : "text",
+					"content" : "Cooking for a picky eater can be a bit like walking a culinary tightrope, huh? How about playing it safe with something like Chicken Alfredo Pasta? It's pretty straightforward, hard to go wrong with, and most picky eaters don't object to it. The creamy sauce and tender chicken over pasta is like the Switzerland of dinner dishes – neutral and likable by many! Plus, it's quick to whip up, leaving you more time to focus on your date rather than being chained to the stove. Would you like a simple recipe for it?"
+				}
+			]
 		},
 		{
 			"sender" : "user",
-			"content" : "Yes please!"
+			"content" : [
+				{
+					"modality" : "text",
+					"content" : "Yes please, it would be great !"
+				}
+			]
 		}
 	]
 }
+
+
+
+
+
 
 {
 	"messages" : [

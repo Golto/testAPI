@@ -11,7 +11,12 @@ const axios = require('axios');
 ============================================================= */
 
 const MODELS = {
+	// ==================================
+	//				TEXT
+	// ==================================
+
 	// TEXT GENERATION
+
 	"GPT2": {
 		"name": "gpt2",
 		"max": 1024
@@ -32,7 +37,52 @@ const MODELS = {
 		"name": "HuggingFaceH4/zephyr-7b-alpha",
 		"max": 24576
 	},
-	// AUDIO GENERATION
+
+	// TEXT SIMILARITY
+
+	"MINI-LM" : {
+		"name" : "sentence-transformers/all-MiniLM-L6-v2",
+	},
+
+	// EMBEDDINGS
+
+	"BGE-LARGE" : {
+		"name" : "BAAI/bge-large-en-v1.5",
+	},
+
+	// ==================================
+	//				IMAGE
+	// ==================================
+
+	//VISION
+
+	"IMG-CAPTION-LARGE" : {
+		"name" : "Salesforce/blip-image-captioning-large",
+	},
+
+	// IMAGE CLASSIFICATION
+
+	"CLIP-VITE-LARGE" : {
+		"name" : "openai/clip-vit-large-patch14",
+	},
+
+	// TEXT TO IMAGE
+
+	"ANIMAGINE" : {
+		"name" : "cagliostrolab/animagine-xl-3.0",
+		"info" : "finetuned for anime style", 
+	},
+
+	"OPEN_DALLE" : {
+		"name" : "dataautogpt3/OpenDalleV1.1",
+		"info" : "non-commercial use + can generate text : '((Golpex!)text logo:1), orange background'"
+	},
+
+	// ==================================
+	//				AUDIO
+	// ==================================
+
+	// MUSIC GENERATION
 	
 	"MUSIC_GEN_SMALL": {
 		"name" : "facebook/musicgen-small",
@@ -40,6 +90,25 @@ const MODELS = {
 	"MUSIC_GEN_MEDIUM": {
 		"name" : "facebook/musicgen-medium",
 	},
+
+	//AUTOMATIC SPEECH RECOGNITION
+
+	"PARAKEET" : {
+		"name" : "nvidia/parakeet-rnnt-1.1b",
+	},
+
+	// TEXT TO SPEECH
+
+	"BARK" : {
+		"name" : "suno/bark",
+	},
+
+	"BARK-SMALL" : {
+		"name" : "suno/bark-small",
+	},
+
+	// ==================================
+
 };
 
 // clés gratuites et renouvelables
@@ -50,17 +119,21 @@ const API_KEYS = {
 };
 
 let API_COUNTER = {
-	"LLM": 0,	//Large Language Model
-	"TS": 0,	//Text to Speech
-	"T2I": 0,	//Text to Image
-	"ASR": 0, 	//Automatic Speech Recognition
-	"T2M": 0, 	//Text to Music
+	"LLM": 0,		//Large Language Model
+	"TS" : 0,		//Sentence Similarity
+	"T2S": 0,		//Text to Speech
+	"T2M": 0, 		//Text to Music
+	"T2I": 0,		//Text to Image
+	"ASR": 0, 		//Automatic Speech Recognition
+	"VISION": 0,	//Vision
 };
 
 let CURRENT_MODELS = {
 	"LLM": MODELS["MISTRAL_7B"],
-	"TS" : MODELS["SIMILARITY"],
-	"T2M" : MODELS["MUSIC_GEN_SMALL"]
+	"TS" : MODELS["MINI-LM"],
+	"T2M" : MODELS["MUSIC_GEN_SMALL"],
+	"ASR" : MODELS["PARAKEET"],
+	"VISION" : MODELS["IMG-CAPTION-LARGE"],
 };
 
 let CURRENT_GENERATION = {
@@ -100,6 +173,77 @@ async function queryAudio(payload, model, keyAPI) {
 	const buffer = Buffer.from(arrayBuffer);
 	return buffer;
 }
+
+
+// ASR
+/*
+async function query(filename) {
+	const data = fs.readFileSync(filename);
+	const response = await fetch(
+		"https://api-inference.huggingface.co/models/nvidia/parakeet-rnnt-1.1b",
+		{
+			headers: { Authorization: "Bearer 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" },
+			method: "POST",
+			body: data,
+		}
+	);
+	const result = await response.json();
+	return result;
+}
+
+query("sample1.flac").then((response) => {
+	console.log(JSON.stringify(response));
+});
+*/
+
+//VISION
+/*
+async function query(filename) {
+	const data = fs.readFileSync(filename);
+	const response = await fetch(
+		"https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-large",
+		{
+			headers: { Authorization: "Bearer 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" },
+			method: "POST",
+			body: data,
+		}
+	);
+	const result = await response.json();
+	return result;
+}
+
+query("cats.jpg").then((response) => {
+	console.log(JSON.stringify(response));
+});
+*/
+
+
+// TEXT SIMILARITY
+/*
+async function query(data) {
+	const response = await fetch(
+		"https://api-inference.huggingface.co/models/sentence-transformers/all-MiniLM-L6-v2",
+		{
+			headers: { Authorization: "Bearer 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" },
+			method: "POST",
+			body: JSON.stringify(data),
+		}
+	);
+	const result = await response.json();
+	return result;
+}
+
+query({"inputs": {
+		"source_sentence": "That is a happy person",
+		"sentences": [
+			"That is a happy dog",
+			"That is a very happy person",
+			"Today is a sunny day"
+		]
+	}}).then((response) => {
+	console.log(JSON.stringify(response));
+});
+*/
 
 /* =============================================================
 						PROMPT MANIPULATION FUNCTIONS
