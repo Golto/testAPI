@@ -377,7 +377,7 @@ app.post('/tinia/ask', async (req, res) => {
 
     try {
 
-	    const {context, conversation} = JSON.parse(req.body)
+	    const {context, conversation} = req.body
 
 	    // Vérifie si les paramètres context et conversation sont fournis
 	    if (!context || !conversation) {
@@ -387,6 +387,7 @@ app.post('/tinia/ask', async (req, res) => {
         const response = await CHATBOT["tinia"](context, conversation);
         res.send(response); // todo : retourner un json output > message > modalities ...
     } catch (error) {
+    	console.error(error.message)
         res.status(500).send(`Erreur: ${error.message}`);
     }
 });
