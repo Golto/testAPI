@@ -17,12 +17,14 @@ const port = 3000;
 const query = require('./query'); // ne sert que pour /music
 const promptManager = require('./promptManager');
 
-
+/*
 app.use((req, res, next) => {
 	res.header('Access-Control-Allow-Origin', '*');
 	res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
 	next();
 });
+*/
+app.use(express.json())
 
 /* =============================================================
 						API METHODS
@@ -376,7 +378,7 @@ app.get('/tinia/ask', async (req, res) => {
 app.post('/tinia/ask', async (req, res) => {
 
     try {
-
+    	console.log(req.body)
 	    const {context, conversation} = req.body
 
 	    // Vérifie si les paramètres context et conversation sont fournis
