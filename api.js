@@ -374,18 +374,18 @@ app.get('/tinia/ask', async (req, res) => {
 });
 
 app.post('/tinia/ask', async (req, res) => {
-    const context = req.body.context;
-    let conversation = req.body.conversation;
-
-    // Vérifie si les paramètres context et conversation sont fournis
-    if (!context || !conversation) {
-        return res.status(400).send("Les paramètres 'context' et 'conversation' sont requis.");
-    }
 
     try {
-        conversation = JSON.parse(conversation);
+
+	    const {context, conversation} = JSON.parse(req.body)
+
+	    // Vérifie si les paramètres context et conversation sont fournis
+	    if (!context || !conversation) {
+	        return res.status(400).send("Les paramètres 'context' et 'conversation' sont requis.");
+	    }
+
         const response = await CHATBOT["tinia"](context, conversation);
-        res.send(response);
+        res.send(response); // todo : retourner un json output > message > modalities ...
     } catch (error) {
         res.status(500).send(`Erreur: ${error.message}`);
     }
